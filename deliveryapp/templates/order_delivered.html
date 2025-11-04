@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Order Delivered - PetCure</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background-color: #eef3f7;
+      margin: 0;
+      padding: 0;
+    }
+
+    .email-wrapper {
+      max-width: 650px;
+      margin: 40px auto;
+      background-color: #ffffff;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    .header {
+      background-color: #0077b6;
+      color: #ffffff;
+      text-align: center;
+      padding: 25px 15px;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 26px;
+      font-weight: 700;
+    }
+
+    .content {
+      padding: 30px 40px;
+      color: #444;
+      line-height: 1.7;
+    }
+
+    .content h2 {
+      color: #0077b6;
+      font-size: 22px;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    .content p {
+      font-size: 16px;
+      margin: 10px 0;
+    }
+
+    .order-box {
+      background-color: #f1f9ff;
+      border: 1px solid #cce5ff;
+      border-radius: 10px;
+      padding: 15px;
+      margin: 20px 0;
+      text-align: center;
+    }
+
+    .order-box strong {
+      color: #0077b6;
+      font-size: 18px;
+    }
+
+    .footer {
+      background-color: #f6f8fa;
+      text-align: center;
+      padding: 20px;
+      font-size: 14px;
+      color: #777;
+      border-top: 1px solid #eee;
+    }
+
+    .footer a {
+      color: #0077b6;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    @media (max-width: 600px) {
+      .content {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="email-wrapper">
+    <div class="header">
+      <h1>🐾 PetCure</h1>
+    </div>
+
+    <div class="content">
+      <h2>🎉 Order Delivered Successfully!</h2>
+      <p>Hi <strong>{{ user.username }}</strong>,</p>
+      <p>We’re excited to let you know that your order has been successfully delivered.</p>
+
+      <div class="order-box">
+        <p>Your Order ID: <strong>#{{ order.id }}</strong></p>
+        <p>Status: <strong>Delivered ✅</strong></p>
+      </div>
+
+      <p>We hope you and your pet love your purchase! Thank you for trusting <strong>PetCure</strong>.</p>
+      <p>If you have any questions or feedback, feel free to reach out to our <a href="#">support team</a>.</p>
+    </div>
+
+    <div class="footer">
+      <p>© {{ current_year|default:2025 }} PetCure. All rights reserved.</p>
+      <p>Delivered with ❤️ by the PetCure Team</p>
+    </div>
+  </div>
+</body>
+</html>

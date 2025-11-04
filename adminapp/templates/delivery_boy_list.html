@@ -1,0 +1,239 @@
+{% extends 'admin_index.html' %}
+{% block content %}
+
+<style>
+    body {
+        background-color: #55b5e8;
+    }
+    .container h2 {
+        color: #00477d;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+    .table thead th {
+        background-color: #e9ecef;
+        font-weight: 600;
+    }
+    .table tbody tr:hover {
+        background-color: #f1f5f9;
+    }
+    .status-badge {
+        padding: 5px 10px;
+        border-radius: 12px;
+        font-weight: 500;
+        font-size: 0.85rem;
+    }
+    .status-pending {
+        background-color: #ffc107;
+        color: #212529;
+    }
+    .status-approved {
+        background-color: #28a745;
+        color: #fff;
+    }
+    .status-rejected {
+        background-color: #dc3545;
+        color: #fff;
+    }
+    .btn-sm {
+        font-size: 0.8rem;
+        padding: 4px 10px;
+    }
+    .table img {
+        object-fit: cover;
+        cursor: pointer;
+    }
+</style>
+
+<div class="container my-5">
+    <h2 class="text-center mb-5 fw-bold">Delivery Agent Management</h2>
+
+    {% if messages %}
+        <div class="row justify-content-center mb-3">
+            <div class="col-md-8">
+                {% for message in messages %}
+                    <div class="alert alert-info text-center">{{ message }}</div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Pending Section -->
+    <div class="bg-light bg-opacity-25 border rounded p-4 mb-5 shadow-sm">
+        <h4 class="fw-bold mb-3" style="color: #00477d;">Pending Delivery Agent</h4>
+        {% if pending_boys %}
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover text-center align-middle bg-white">
+                    <thead>
+                        <tr>
+                            <th>ID</th><th>Profile</th><th>Username</th><th>Email</th>
+                            <th>Phone</th><th>City</th><th>ID Card</th><th>Status</th><th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for boy in pending_boys %}
+                        <tr>
+                            <td>{{ boy.id }}</td>
+                            <td>
+                                {% if boy.profile_image %}
+                                <img src="{{ boy.profile_image.url }}" class="rounded-circle" width="50" height="50"
+                                     data-bs-toggle="modal" data-bs-target="#imageModal" data-bs-image="{{ boy.profile_image.url }}">
+                                {% else %}<span class="text-muted">N/A</span>{% endif %}
+                            </td>
+                            <td>{{ boy.username }}</td>
+                            <td>{{ boy.email }}</td>
+                            <td>{{ boy.phone }}</td>
+                            <td>{{ boy.city }}</td>
+                            <td>
+                                {% if boy.id_card_image %}
+                                <img src="{{ boy.id_card_image.url }}" width="60" height="40"
+                                     data-bs-toggle="modal" data-bs-target="#imageModal" data-bs-image="{{ boy.id_card_image.url }}">
+                                {% else %}<span class="text-muted">N/A</span>{% endif %}
+                            </td>
+                            <td>
+                                <span class="status-badge status-pending">{{ boy.status|capfirst }}</span>
+                            </td>
+                            <td class="d-flex justify-content-center gap-2">
+                                <form method="POST" action="{% url 'approve_delivery_boy' %}">{% csrf_token %}
+                                    <input type="hidden" name="delivery_boy_id" value="{{ boy.id }}">
+                                    <button class="btn btn-success btn-sm">Approve</button>
+                                </form>
+                                <form method="POST" action="{% url 'reject_delivery_boy' %}">{% csrf_token %}
+                                    <input type="hidden" name="delivery_boy_id" value="{{ boy.id }}">
+                                    <button class="btn btn-danger btn-sm">Reject</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-center text-muted mb-0">No pending delivery boys.</p>
+        {% endif %}
+    </div>
+
+    <!-- Approved Section -->
+    <div class="bg-light bg-opacity-25 border rounded p-4 mb-5 shadow-sm">
+        <h4 class="fw-bold mb-3" style="color: #00477d;">Approved Delivery Agent</h4>
+        {% if approved_boys %}
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover text-center align-middle bg-white">
+                    <thead>
+                        <tr>
+                            <th>ID</th><th>Profile</th><th>Username</th><th>Email</th>
+                            <th>Phone</th><th>City</th><th>ID Card</th><th>Status</th><th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for boy in approved_boys %}
+                        <tr>
+                            <td>{{ boy.id }}</td>
+                            <td>
+                                {% if boy.profile_image %}
+                                <img src="{{ boy.profile_image.url }}" class="rounded-circle" width="50" height="50"
+                                     data-bs-toggle="modal" data-bs-target="#imageModal" data-bs-image="{{ boy.profile_image.url }}">
+                                {% else %}<span class="text-muted">N/A</span>{% endif %}
+                            </td>
+                            <td>{{ boy.username }}</td>
+                            <td>{{ boy.email }}</td>
+                            <td>{{ boy.phone }}</td>
+                            <td>{{ boy.city }}</td>
+                            <td>
+                                {% if boy.id_card_image %}
+                                <img src="{{ boy.id_card_image.url }}" width="60" height="40"
+                                     data-bs-toggle="modal" data-bs-target="#imageModal" data-bs-image="{{ boy.id_card_image.url }}">
+                                {% else %}<span class="text-muted">N/A</span>{% endif %}
+                            </td>
+                            <td>
+                                <span class="status-badge status-approved">{{ boy.status|capfirst }}</span>
+                            </td>
+                            <td class="d-flex justify-content-center">
+                                <form method="POST" action="{% url 'reject_delivery_boy' %}">{% csrf_token %}
+                                    <input type="hidden" name="delivery_boy_id" value="{{ boy.id }}">
+                                    <button class="btn btn-danger btn-sm">Reject</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-center text-muted mb-0">No approved delivery boys.</p>
+        {% endif %}
+    </div>
+
+    <!-- Rejected Section -->
+    <div class="bg-light bg-opacity-25 border rounded p-4 mb-5 shadow-sm">
+        <h4 class="fw-bold mb-3" style="color: #00477d;">Rejected Delivery Agent</h4>
+        {% if rejected_boys %}
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover text-center align-middle bg-white">
+                    <thead>
+                        <tr>
+                            <th>ID</th><th>Profile</th><th>Username</th><th>Email</th>
+                            <th>Phone</th><th>City</th><th>ID Card</th><th>Status</th><th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for boy in rejected_boys %}
+                        <tr>
+                            <td>{{ boy.id }}</td>
+                            <td>
+                                {% if boy.profile_image %}
+                                <img src="{{ boy.profile_image.url }}" class="rounded-circle" width="50" height="50"
+                                     data-bs-toggle="modal" data-bs-target="#imageModal" data-bs-image="{{ boy.profile_image.url }}">
+                                {% else %}<span class="text-muted">N/A</span>{% endif %}
+                            </td>
+                            <td>{{ boy.username }}</td>
+                            <td>{{ boy.email }}</td>
+                            <td>{{ boy.phone }}</td>
+                            <td>{{ boy.city }}</td>
+                            <td>
+                                {% if boy.id_card_image %}
+                                <img src="{{ boy.id_card_image.url }}" width="60" height="40"
+                                     data-bs-toggle="modal" data-bs-target="#imageModal" data-bs-image="{{ boy.id_card_image.url }}">
+                                {% else %}<span class="text-muted">N/A</span>{% endif %}
+                            </td>
+                            <td>
+                                <span class="status-badge status-rejected">{{ boy.status|capfirst }}</span>
+                            </td>
+                            <td class="d-flex justify-content-center">
+                                <form method="POST" action="{% url 'approve_delivery_boy' %}">{% csrf_token %}
+                                    <input type="hidden" name="delivery_boy_id" value="{{ boy.id }}">
+                                    <button class="btn btn-success btn-sm">Approve</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="text-center text-muted mb-0">No rejected delivery boys.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal for large image preview -->
+<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content bg-transparent border-0">
+      <div class="modal-body text-center">
+        <img id="modalImage" src="" class="img-fluid rounded shadow" alt="Image Preview">
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+    var imageModal = document.getElementById('imageModal');
+    imageModal.addEventListener('show.bs.modal', function (event) {
+        var button = event.relatedTarget;
+        var imageSrc = button.getAttribute('data-bs-image');
+        var modalImg = document.getElementById('modalImage');
+        modalImg.src = imageSrc;
+    });
+</script>
+
+{% endblock %}

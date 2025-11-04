@@ -1,0 +1,183 @@
+{% extends 'admin_index.html' %}
+{% block content %}
+<style>
+body { background-color: #55b5e8; }
+.container { max-width: 1000px; margin-top: 50px; }
+h3 { color: #00477d; }
+.btn-custom { background-color: #00477d; color: #fff; border: none; }
+.btn-custom:hover { background-color: #00365e; }
+.btn-remove { background-color: #dc3545; color: #fff; border: none; }
+.btn-remove:hover { background-color: #a71d2a; }
+.product-item { border: 1px solid #ddd; border-radius: 10px; padding: 15px; margin-bottom: 15px; background-color: #fff; transition: transform 0.3s ease, box-shadow 0.3s ease; }
+.product-item:hover { transform: translateY(-5px); box-shadow: 0 6px 15px rgba(0,0,0,0.1); }
+.image-preview { margin-top: 8px; display: flex; gap: 5px; flex-wrap: wrap; }
+.image-preview img { width: 60px; height: 60px; object-fit: cover; border-radius: 5px; border: 1px solid #ccc; }
+</style>
+
+<div class="container shadow-lg p-4 rounded bg-white">
+    <h3 class="mb-4">Add Products</h3>
+
+    {% if messages %}
+        {% for msg in messages %}
+            <div class="alert alert-{{ msg.tags }} alert-dismissible fade show" role="alert">
+                {{ msg }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <!-- Product Category -->
+        <div class="mb-3">
+            <label class="form-label">Product Category</label>
+            <select name="productcategory" class="form-select" required>
+                <option value="">-- Select Product Category --</option>
+                {% for cat in product_categories %}
+                    <option value="{{ cat.id }}">{{ cat.productcategory }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Pet Category -->
+        <div class="mb-3">
+            <label class="form-label">Pet Category</label>
+            <select id="petCategory" name="petcategory" class="form-select" required>
+                <option value="">-- Select Pet Category --</option>
+                {% for cat in pet_categories %}
+                    <option value="{{ cat.id }}">{{ cat.petcategory }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Pet Subcategory -->
+        <div class="mb-3">
+            <label class="form-label">Pet Subcategory</label>
+            <select id="petSubcategory" name="petsubcategory" class="form-select" required>
+                <option value="">-- Select Subcategory --</option>
+                {% for sub in pet_subcategories %}
+                    <option value="{{ sub.id }}" data-category="{{ sub.petcategory.id }}">{{ sub.petsubcategory }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Products List -->
+        <div id="product-list">
+            <div class="product-item" data-index="0">
+                <div class="mb-2">
+                    <label class="form-label">Product Name</label>
+                    <input type="text" name="name[]" class="form-control" required>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Description</label>
+                    <textarea name="description[]" class="form-control" rows="2"></textarea>
+                </div>
+                <div class="mb-2 row">
+                    <div class="col">
+                        <label class="form-label">Price</label>
+                        <input type="number" step="0.01" name="price[]" class="form-control" required>
+                    </div>
+                    <div class="col">
+                        <label class="form-label">Stock</label>
+                        <input type="number" name="stock[]" class="form-control" required>
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Product Images</label>
+                    <input type="file" name="images_0" class="form-control images-input" multiple>
+                    <div class="image-preview"></div>
+                </div>
+                <button type="button" class="btn btn-sm btn-remove">Remove</button>
+            </div>
+        </div>
+
+        <button type="button" id="add-product" class="btn btn-custom mb-3">+ Add Another Product</button>
+        <div class="text-end">
+            <button type="submit" class="btn btn-custom">Save Products</button>
+        </div>
+    </form>
+</div>
+
+<script>
+// Filter subcategories based on selected pet category
+const petCategorySelect = document.getElementById('petCategory');
+const petSubcategorySelect = document.getElementById('petSubcategory');
+
+petCategorySelect.addEventListener('change', function() {
+    const selectedCat = this.value;
+    const options = petSubcategorySelect.querySelectorAll('option');
+
+    options.forEach(option => {
+        if (!option.value) return; // skip placeholder
+        option.style.display = (option.dataset.category === selectedCat) ? 'block' : 'none';
+    });
+
+    petSubcategorySelect.value = '';
+});
+
+// Dynamic product fields
+document.addEventListener("DOMContentLoaded", () => {
+    const addBtn = document.getElementById("add-product");
+    const productList = document.getElementById("product-list");
+    let index = 0;
+
+    function productTemplate(i) {
+        return `
+        <div class="product-item" data-index="${i}">
+            <div class="mb-2">
+                <label class="form-label">Product Name</label>
+                <input type="text" name="name[]" class="form-control" required>
+            </div>
+            <div class="mb-2">
+                <label class="form-label">Description</label>
+                <textarea name="description[]" class="form-control" rows="2"></textarea>
+            </div>
+            <div class="mb-2 row">
+                <div class="col">
+                    <label class="form-label">Price</label>
+                    <input type="number" step="0.01" name="price[]" class="form-control" required>
+                </div>
+                <div class="col">
+                    <label class="form-label">Stock</label>
+                    <input type="number" name="stock[]" class="form-control" required>
+                </div>
+            </div>
+            <div class="mb-2">
+                <label class="form-label">Product Images</label>
+                <input type="file" name="images_${i}" class="form-control images-input" multiple>
+                <div class="image-preview"></div>
+            </div>
+            <button type="button" class="btn btn-sm btn-remove">Remove</button>
+        </div>`;
+    }
+
+    addBtn.addEventListener("click", () => {
+        index++;
+        const div = document.createElement("div");
+        div.innerHTML = productTemplate(index);
+        productList.appendChild(div.firstElementChild);
+    });
+
+    // Remove product
+    document.addEventListener("click", (e) => {
+        if (e.target.classList.contains("btn-remove")) {
+            e.target.closest(".product-item").remove();
+        }
+    });
+
+    // Image preview
+    document.addEventListener("change", (e) => {
+        if(e.target.classList.contains("images-input")) {
+            const preview = e.target.nextElementSibling;
+            preview.innerHTML = '';
+            Array.from(e.target.files).forEach(file => {
+                const img = document.createElement('img');
+                img.src = URL.createObjectURL(file);
+                preview.appendChild(img);
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

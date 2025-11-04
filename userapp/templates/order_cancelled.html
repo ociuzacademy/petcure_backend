@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Order Cancelled</title>
+    <style>
+      body {
+        background-color: #f8f9fa;
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+      }
+
+      .container {
+        max-width: 600px;
+        background: #ffffff;
+        margin: 40px auto;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+
+      .header {
+        background-color: #dc3545;
+        color: #ffffff;
+        text-align: center;
+        padding: 20px;
+      }
+
+      .header h1 {
+        margin: 0;
+        font-size: 24px;
+      }
+
+      .content {
+        padding: 25px;
+        color: #333;
+      }
+
+      .content h2 {
+        color: #dc3545;
+        margin-top: 0;
+      }
+
+      .order-details {
+        margin: 20px 0;
+        border-top: 1px solid #ddd;
+        border-bottom: 1px solid #ddd;
+        padding: 10px 0;
+      }
+
+      .footer {
+        background-color: #f1f1f1;
+        text-align: center;
+        padding: 15px;
+        font-size: 14px;
+        color: #666;
+      }
+
+      a.button {
+        display: inline-block;
+        background-color: #dc3545;
+        color: white !important;
+        padding: 10px 20px;
+        border-radius: 6px;
+        text-decoration: none;
+        margin-top: 15px;
+      }
+
+      a.button:hover {
+        background-color: #b02a37;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>Order Cancelled</h1>
+      </div>
+      <div class="content">
+        <p>Dear {{ user.first_name }},</p>
+
+        <p>We wanted to let you know that your order has been successfully cancelled.</p>
+
+        <div class="order-details">
+          <p><strong>Order ID:</strong> {{ order.id }}</p>
+          <p><strong>Cancelled On:</strong> {{ order.order_date }}</p>
+          <p><strong>Total Amount:</strong> ₹{{ order.total_amount }}</p>
+        </div>
+
+        <p>If this was a mistake or you’d like to place a new order, you can do so using the button below.</p>
+
+        <!-- <a href="https://yourwebsite.com/shop" class="button">Shop Again</a> -->
+      </div>
+
+      <div class="footer">
+        <p>Thank you for shopping with us!</p>
+        <p><strong>PetCure</strong> | support@petcure.com</p>
+      </div>
+    </div>
+  </body>
+</html>

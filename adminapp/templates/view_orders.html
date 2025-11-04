@@ -1,0 +1,66 @@
+{% extends 'admin/admin_index.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container py-4">
+  <h2 class="text-center text-primary fw-bold mb-4">All Orders</h2>
+
+  <div class="card shadow-lg p-4">
+    <table class="table table-bordered table-striped align-middle text-center">
+      <thead class="table-primary">
+        <tr>
+          <th scope="col">#</th>
+          <th scope="col">User</th>
+          <th scope="col">Order Date</th>
+          <th scope="col">Status</th>
+          <th scope="col">Total Amount</th>
+          <th scope="col">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for order in orders %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+          <td>{{ order.user.username }}</td>
+          <td>{{ order.order_date|date:"d M Y, h:i A" }}</td>
+          <td>
+            {% if order.status == 'order on the way' %}
+              <span class="badge bg-info text-dark">{{ order.status }}</span>
+            {% elif order.status == 'order delivered' %}
+              <span class="badge bg-success">{{ order.status }}</span>
+            {% elif order.status == 'order cancelled' %}
+              <span class="badge bg-danger">{{ order.status }}</span>
+            {% else %}
+              <span class="badge bg-secondary">{{ order.status }}</span>
+            {% endif %}
+          </td>
+          <td>₹{{ order.total_amount }}</td>
+          <td>
+            <a href="{% url 'admin_order_detail' order.id %}" class="btn btn-sm btn-outline-primary">
+              View Details
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="text-muted py-3">No orders found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<style>
+  .text-primary {
+    color: #0077b6 !important;
+  }
+  .card {
+    border-radius: 15px;
+  }
+  .table th {
+    background-color: #0077b6;
+    color: white;
+  }
+</style>
+{% endblock %}

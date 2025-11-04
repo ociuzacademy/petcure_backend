@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Order on the Way</title>
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f6f7fb;
+        color: #333;
+        margin: 0;
+        padding: 0;
+      }
+      .email-container {
+        background: white;
+        max-width: 600px;
+        margin: 30px auto;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+      .header {
+        background: #0077b6;
+        color: white;
+        text-align: center;
+        padding: 20px 0;
+      }
+      .header img {
+        width: 80px;
+        margin-bottom: 10px;
+      }
+      .content {
+        padding: 25px;
+      }
+      .content h2 {
+        color: #0077b6;
+      }
+      .order-details {
+        background: #f1f5f9;
+        padding: 15px;
+        border-radius: 8px;
+        margin-top: 10px;
+      }
+      .footer {
+        background: #e9ecef;
+        text-align: center;
+        padding: 15px;
+        font-size: 13px;
+        color: #555;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="email-container">
+      <div class="header">
+        <img src="https://cdn-icons-png.flaticon.com/512/2331/2331970.png" alt="PetCure Logo" />
+        <h1>PetCure</h1>
+      </div>
+      <div class="content">
+        <h2>Hi {{ user.username }},</h2>
+        <p>Good news! Your order <strong>#{{ order.id }}</strong> is now on its way 🚚.</p>
+
+        <div class="order-details">
+          <p><strong>Order ID:</strong> {{ order.id }}</p>
+          <p><strong>Total Amount:</strong> ₹{{ order.total_amount }}</p>
+          <p><strong>Delivery Agent:</strong> {{ delivery_agent.name }}</p>
+          <p><strong>Expected Delivery:</strong> {{ order.estimated_delivery_date|date:"d M, Y" }}</p>
+        </div>
+
+        <p>Thank you for choosing <strong>PetCure</strong>! We’ll notify you once your order is delivered.</p>
+      </div>
+      <div class="footer">
+        <p>&copy; {{ now|date:"Y" }} PetCure. All rights reserved.</p>
+      </div>
+    </div>
+  </body>
+</html>

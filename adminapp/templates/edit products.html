@@ -1,0 +1,181 @@
+{% extends 'admin_index.html' %}
+{% block content %}
+<style>
+    body {
+        background-color: #55b5e8;
+    }
+
+    .container {
+        max-width: 800px;
+        margin-top: 50px;
+        background: #fff;
+        border-radius: 15px;
+        padding: 30px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    h3 {
+        color: #00477d;
+        margin-bottom: 20px;
+    }
+
+    label {
+        color: #00477d;
+        font-weight: 500;
+    }
+
+    .form-control, .form-select {
+        border-radius: 10px;
+    }
+
+    .btn-primary {
+        background-color: #00477d;
+        border: none;
+        transition: background-color 0.3s;
+    }
+
+    .btn-primary:hover {
+        background-color: #00365e;
+    }
+
+    .btn-danger {
+        background-color: #dc3545;
+        border: none;
+    }
+
+    .image-preview {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 15px;
+    }
+
+    .image-box {
+        position: relative;
+        display: inline-block;
+    }
+
+    .image-box img {
+        width: 120px;
+        height: 120px;
+        object-fit: cover;
+        border-radius: 10px;
+        border: 2px solid #ddd;
+    }
+
+    .remove-check {
+        position: absolute;
+        bottom: -8px;
+        left: 0;
+        background: rgba(255, 255, 255, 0.8);
+        font-size: 0.8rem;
+        padding: 2px 6px;
+        border-radius: 5px;
+    }
+</style>
+
+<div class="container">
+    <h3>Edit Product</h3>
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        <!-- Product Category -->
+        <div class="mb-3">
+            <label class="form-label">Product Category</label>
+            <select name="productcategory" class="form-select" required>
+                <option value="">-- Select Product Category --</option>
+                {% for cat in productcategories %}
+                    <option value="{{ cat.id }}" {% if product.productcategory.id == cat.id %}selected{% endif %}>{{ cat.productcategory }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Pet Category -->
+        <div class="mb-3">
+            <label class="form-label">Pet Category</label>
+            <select name="petcategory" id="petcategory" class="form-select" required onchange="filterSubcategories()">
+                <option value="">-- Select Pet Category --</option>
+                {% for pet in petcategories %}
+                    <option value="{{ pet.id }}" {% if product.petcategory.id == pet.id %}selected{% endif %}>{{ pet.petcategory }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Pet Subcategory -->
+        <div class="mb-3">
+            <label class="form-label">Pet Subcategory</label>
+            <select name="petsubcategory" id="petsubcategory" class="form-select" required>
+                <option value="">-- Select Pet Subcategory --</option>
+                {% for sub in petsubcategories %}
+                    <option value="{{ sub.id }}" data-pet="{{ sub.petcategory.id }}" {% if product.petsubcategory.id == sub.id %}selected{% endif %}>{{ sub.petsubcategory }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Product Details -->
+        <div class="mb-3">
+            <label class="form-label">Product Name</label>
+            <input type="text" name="name" class="form-control" value="{{ product.name }}" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Description</label>
+            <textarea name="description" class="form-control" rows="3" required>{{ product.description }}</textarea>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label class="form-label">Price</label>
+                <input type="number" name="price" class="form-control" step="0.01" value="{{ product.price }}" required>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Stock</label>
+                <input type="number" name="stock" class="form-control" value="{{ product.stock }}" required>
+            </div>
+        </div>
+
+        <!-- Product Images -->
+        <div class="mb-3">
+            <label class="form-label">Existing Images</label>
+            <div class="image-preview">
+                {% for img in product.images.all %}
+                <div class="image-box">
+                    <img src="{{ img.image.url }}" alt="Product Image">
+                    <label class="remove-check">
+                        <input type="checkbox" name="remove_images" value="{{ img.id }}"> Remove
+                    </label>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Add More Images</label>
+            <input type="file" name="images" class="form-control" multiple>
+        </div>
+
+        <div class="text-end">
+            <button type="submit" class="btn btn-primary px-4">💾 Update Product</button>
+            <a href="{% url 'view_products' %}" class="btn btn-danger px-4">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<script>
+function filterSubcategories() {
+    const petId = document.getElementById("petcategory").value;
+    const subSelect = document.getElementById("petsubcategory");
+    const allOptions = subSelect.querySelectorAll("option[data-pet]");
+    subSelect.value = "";
+
+    allOptions.forEach(opt => {
+        if (petId === "" || opt.getAttribute("data-pet") === petId) {
+            opt.style.display = "block";
+        } else {
+            opt.style.display = "none";
+        }
+    });
+}
+</script>
+
+{% endblock %}

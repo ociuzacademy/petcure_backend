@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Order Confirmation</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f9fafb;
+      padding: 20px;
+    }
+    .email-container {
+      max-width: 600px;
+      background: #fff;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    h2 {
+      color: #0077b6;
+    }
+    .footer {
+      margin-top: 20px;
+      font-size: 12px;
+      color: #666;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="email-container">
+    <h2>Hi {{ user.first_name|default:user.username }},</h2>
+
+    <p>Thank you for your order! 🎉</p>
+
+    <p><strong>Order ID:</strong> {{ order.id }}</p>
+    <p><strong>Payment Method:</strong> {{ payment.payment_method|title }}</p>
+    <p><strong>Amount Paid:</strong> ₹{{ payment.amount }}</p>
+    <p><strong>Estimated Delivery:</strong> {{ order.estimated_delivery_date|date:"d M Y" }}</p>
+
+    <p>We’ll notify you once your order is shipped.</p>
+
+    <p>Thank you for shopping with <strong>PetCure</strong>! 🐾</p>
+
+    <div class="footer">
+      <p>© {{ now|date:"Y" }} PetCure. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>
