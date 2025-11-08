@@ -49,13 +49,19 @@ class ProductImageSerializer(serializers.ModelSerializer):
         fields = ['id', 'image']
 
 class ProductSerializer(serializers.ModelSerializer):
-    images = ProductImageSerializer(many=True, read_only=True)  # nested images
+    images = ProductImageSerializer(many=True, read_only=True)
+    productcategory_name = serializers.CharField(source='productcategory.productcategory', read_only=True)
+    petcategory_name = serializers.CharField(source='petcategory.petcategory', read_only=True)
+    petsubcategory_name = serializers.CharField(source='petsubcategory.petsubcategory', read_only=True)
+
 
     class Meta:
         model = Product
         fields = [
             'id', 'name', 'description', 'price', 'stock',
-            'productcategory', 'petcategory', 'petsubcategory',
+            'productcategory', 'productcategory_name',
+            'petcategory', 'petcategory_name',
+            'petsubcategory', 'petsubcategory_name',
             'created_at', 'images'
         ]
         

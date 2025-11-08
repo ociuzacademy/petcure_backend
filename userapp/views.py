@@ -242,7 +242,7 @@ class ViewAllProductsView(APIView):
     
 class ProductViewSet(viewsets.ViewSet):
     def list(self, request):
-        petcategory_id = request.query_params.get('petcategory_id')
+        petcategory_id = request.query_params.get('pet_category_id')
         
         if petcategory_id:
             products = Product.objects.filter(petcategory_id=petcategory_id)

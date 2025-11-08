@@ -26,4 +26,5 @@ urlpatterns = [
     path('doctor_list/', views.doctor_list, name='doctor_list'),
     path('approve_doctor/', views.approve_doctor, name='approve_doctor'),
     path('reject_doctor/', views.reject_doctor, name='reject_doctor'),
+    
 ]

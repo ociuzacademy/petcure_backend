@@ -414,3 +414,4 @@ def reject_doctor(request):
 def admin_view_orders(request):
     orders = Order.objects.all().order_by('-order_date')
     return render(request, 'admin/view_orders.html', {'orders': orders})
+

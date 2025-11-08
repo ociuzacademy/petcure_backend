@@ -391,10 +391,10 @@
                     <a href="{% url 'admin_index' %}"><i class="fas fa-home"></i> Home</a>
                 </li>
                 <li>
-                    <a href="#categorySubmenu" data-bs-toggle="collapse" aria-expanded="false" class="dropdown-toggle">
+                    <a href="#petcategorymenu" data-bs-toggle="collapse" aria-expanded="false" class="dropdown-toggle">
                         <i class="fas fa-cogs"></i> Pets
                     </a>
-                    <ul class="collapse list-unstyled" id="categorySubmenu">
+                    <ul class="collapse list-unstyled" id="petcategorymenu">
                         <!-- <li><a href=""><i class="fas fa-plus-circle"></i> Add Service</a></li> -->
                         <li><a href="{% url 'add_pet_category' %}"><i class="fas fa-plus-circle"></i>Pet Category</a></li>
                         <!-- <li><a href=""><i class="fas fa-list"></i>List Categories</a></li> -->
@@ -402,24 +402,24 @@
                     </ul>
                 </li>
                 <li>
-                    <a href="#serviceSubmenu" data-bs-toggle="collapse" aria-expanded="false" class="dropdown-toggle">
+                    <a href="#productSubmenu" data-bs-toggle="collapse" aria-expanded="false" class="dropdown-toggle">
                         <i class="fas fa-cogs"></i> Products
                     </a>
-                    <ul class="collapse list-unstyled" id="serviceSubmenu">
+                    <ul class="collapse list-unstyled" id="productSubmenu">
                         <li><a href="{% url 'add_product_category' %}"><i class="fas fa-plus-circle"></i> Product Category</a></li>
                         <li><a href="{% url 'add_products' %}"><i class="fas fa-plus-circle"></i> Add Product</a></li>
                         <li><a href="{% url 'view_products' %}"><i class="fas fa-list"></i> View Products</a></li>
                     </ul>
                 </li>
                 <li>
-                    <a href="#providerSubmenu" data-bs-toggle="collapse" aria-expanded="false" class="dropdown-toggle">
+                    <a href="#doctorSubmenu" data-bs-toggle="collapse" aria-expanded="false" class="dropdown-toggle">
                         <i class="fas fa-cogs"></i> Doctors
                     </a>
-                    <!-- <ul class="collapse list-unstyled" id="providerSubmenu">
-                        <li><a href=""><i class="fas fa-users"></i> Manage Service Providers</a></li>
-                        <li><a href=""><i class="fas fa-users"></i> View Approved Service Providers</a></li>
-                        <li><a href=""><i class="fas fa-users"></i> View Rejected Service Providers</a></li>
-                    </ul> -->
+                    <ul class="collapse list-unstyled" id="doctorSubmenu">
+                        <li><a href="{% url 'doctor_list' %}"><i class="fas fa-users"></i> Manage Doctors</a></li>
+                        <!-- <li><a href=""><i class="fas fa-users"></i> View Approved Service Providers</a></li> -->
+                        <!-- <li><a href=""><i class="fas fa-users"></i> View Rejected Service Providers</a></li> -->
+                    </ul>
                 </li>
                 <li>
                     <!-- <a href=""><i class="fas fa-sign-out-alt"></i> Logout</a> -->
@@ -510,14 +510,14 @@
                     <div class="col-md-4">
                         <a href="{% url 'delivery_boy_list' %}" style="text-decoration: none;">
                             <div class="card">
-                                <p class="c-txt"> View Delivery Agents </p>
+                                <p class="c-txt"> Manage Delivery Agents </p>
                             </div>
                         </a>
                     </div>
                     <div class="col-md-4">
                         <a href="{% url 'doctor_list' %}" style="text-decoration: none;">
                             <div class="card">
-                                <p class="c-txt"> View Doctors </p>
+                                <p class="c-txt"> Manage Doctors </p>
                             </div>
                         </a>
                     </div>
