@@ -49,3 +49,21 @@ class AppointmentSerializer(serializers.ModelSerializer):
             "gender": obj.pet.gender,
             "weight": obj.pet.weight,
         }
+
+
+
+class AppointmentUpdateSerializer(serializers.ModelSerializer):
+    weight = serializers.FloatField(write_only=True, required=False)
+
+    class Meta:
+        model = Appointment
+        fields = ['diagnosis', 'verdict', 'notes', 'weight']
+        
+        
+class TreatmentHistorySerializer(serializers.ModelSerializer):
+    pet_name = serializers.CharField(source='pet.name', read_only=True)
+    weight = serializers.FloatField(source='pet.weight', read_only=True)
+
+    class Meta:
+        model = Appointment
+        fields = ['id', 'pet_name', 'weight', 'diagnosis', 'verdict', 'notes']

@@ -408,6 +408,54 @@ class UpdateCartQuantityByIdView(APIView):
 #             'estimated_delivery_date': estimated_delivery_date.strftime("%Y-%m-%d %H:%M:%S")
 #         }, status=status.HTTP_201_CREATED)
 
+# class MakePurchaseView(APIView):
+#     def post(self, request):
+#         user_id = request.data.get('user_id')
+
+#         # Validate user
+#         try:
+#             user = User.objects.get(id=user_id)
+#         except User.DoesNotExist:
+#             return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+#         # Fetch all cart items for this user
+#         cart_items = Cart.objects.filter(user=user)
+#         if not cart_items.exists():
+#             return Response({'error': 'Cart is empty'}, status=status.HTTP_400_BAD_REQUEST)
+
+#         # Calculate total amount
+#         total_amount = sum(item.total_price for item in cart_items)
+
+#         # Create new order
+#         order = Order.objects.create(
+#             user=user,
+#             total_amount=total_amount,
+#             status='pending',
+#             estimated_delivery_date=timezone.now() + timedelta(days=5)
+#         )
+
+#         # Move cart items to OrderItem
+#         for item in cart_items:
+#             OrderItem.objects.create(
+#                 order=order,
+#                 product=item.product,
+#                 quantity=item.quantity,
+#                 product_price=item.product.price,
+#                 total_price=item.total_price
+#             )
+
+#         # Clear cart after successful order
+#         cart_items.delete()
+
+#         # Success response
+#         return Response({
+#             'success': True,
+#             'message': 'Order placed successfully!',
+#             'order_id': order.id,
+#             'amount_to_pay': str(total_amount),
+#             'estimated_delivery_date': order.estimated_delivery_date.strftime('%Y-%m-%d'),
+#         }, status=status.HTTP_201_CREATED)
+        
 class MakePurchaseView(APIView):
     def post(self, request):
         user_id = request.data.get('user_id')
@@ -418,7 +466,7 @@ class MakePurchaseView(APIView):
         except User.DoesNotExist:
             return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
-        # Fetch all cart items for this user
+        # Fetch all cart items
         cart_items = Cart.objects.filter(user=user)
         if not cart_items.exists():
             return Response({'error': 'Cart is empty'}, status=status.HTTP_400_BAD_REQUEST)
@@ -430,9 +478,12 @@ class MakePurchaseView(APIView):
         order = Order.objects.create(
             user=user,
             total_amount=total_amount,
-            status='pending',
-            estimated_delivery_date=timezone.now() + timedelta(days=5)
+            status='pending'
         )
+
+        # Calculate estimated delivery date (5 days from order_date)
+        order.estimated_delivery_date = order.order_date + timedelta(days=5)
+        order.save()
 
         # Move cart items to OrderItem
         for item in cart_items:
@@ -444,10 +495,9 @@ class MakePurchaseView(APIView):
                 total_price=item.total_price
             )
 
-        # Clear cart after successful order
+        # Clear cart after order
         cart_items.delete()
 
-        # Success response
         return Response({
             'success': True,
             'message': 'Order placed successfully!',
@@ -456,6 +506,68 @@ class MakePurchaseView(APIView):
             'estimated_delivery_date': order.estimated_delivery_date.strftime('%Y-%m-%d'),
         }, status=status.HTTP_201_CREATED)
         
+        
+# class BuyNowView(APIView):
+#     def post(self, request):
+#         user_id = request.data.get('user_id')
+#         product_id = request.data.get('product_id')
+
+#         if not user_id or not product_id:
+#             return Response({'error': 'user_id and product_id are required'}, status=status.HTTP_400_BAD_REQUEST)
+
+#         # Validate user
+#         try:
+#             user = User.objects.get(id=user_id)
+#         except User.DoesNotExist:
+#             return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+#         # Validate product
+#         try:
+#             product = Product.objects.get(id=product_id)
+#         except Product.DoesNotExist:
+#             return Response({'error': 'Product not found'}, status=status.HTTP_404_NOT_FOUND)
+
+#         # Check if product already in user's cart
+#         cart_item, created = Cart.objects.get_or_create(
+#             user=user,
+#             product=product,
+#             defaults={'quantity': 1, 'total_price': product.price}
+#         )
+
+#         # If exists, increment quantity
+#         if not created:
+#             cart_item.quantity += 1
+#             cart_item.total_price = cart_item.quantity * product.price
+#             cart_item.save()
+
+#         # Create order
+#         order = Order.objects.create(
+#             user=user,
+#             total_amount=cart_item.total_price,
+#             status='pending',
+#             estimated_delivery_date=timezone.now() + timedelta(days=5)
+#         )
+
+#         # Create order item
+#         OrderItem.objects.create(
+#             order=order,
+#             product=product,
+#             quantity=cart_item.quantity,
+#             product_price=product.price,
+#             total_price=cart_item.total_price
+#         )
+
+#         # Remove item from cart after purchase
+#         cart_item.delete()
+
+#         return Response({
+#             'success': True,
+#             'message': 'Product purchased successfully!',
+#             'order_id': order.id,
+#             'amount_to_pay': str(order.total_amount),
+#             'estimated_delivery_date': order.estimated_delivery_date.strftime('%Y-%m-%d')
+#         }, status=status.HTTP_201_CREATED)
+
 
 class BuyNowView(APIView):
     def post(self, request):
@@ -477,26 +589,28 @@ class BuyNowView(APIView):
         except Product.DoesNotExist:
             return Response({'error': 'Product not found'}, status=status.HTTP_404_NOT_FOUND)
 
-        # Check if product already in user's cart
+        # Add or update cart item
         cart_item, created = Cart.objects.get_or_create(
             user=user,
             product=product,
             defaults={'quantity': 1, 'total_price': product.price}
         )
 
-        # If exists, increment quantity
         if not created:
             cart_item.quantity += 1
             cart_item.total_price = cart_item.quantity * product.price
             cart_item.save()
 
-        # Create order
+        # Create new order
         order = Order.objects.create(
             user=user,
             total_amount=cart_item.total_price,
-            status='pending',
-            estimated_delivery_date=timezone.now() + timedelta(days=5)
+            status='pending'
         )
+
+        # Estimated delivery = 5 days after order_date
+        order.estimated_delivery_date = order.order_date + timedelta(days=5)
+        order.save()
 
         # Create order item
         OrderItem.objects.create(
@@ -1005,3 +1119,5 @@ class ReorderAPIView(APIView):
             "total_amount": str(new_order.total_amount),
             "estimated_delivery_date": new_order.estimated_delivery_date.strftime("%Y-%m-%d %H:%M:%S")
         }, status=status.HTTP_201_CREATED)
+        
+    

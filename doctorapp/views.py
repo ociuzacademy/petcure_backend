@@ -153,3 +153,148 @@ class BookingDetailsAPIView(APIView):
         }, status=status.HTTP_200_OK)
         
         
+class CompleteAppointmentAPIView(APIView):
+    """
+    PATCH - Complete a clinical appointment
+    Input:
+        - booking_id (Appointment ID)
+        - weight
+        - diagnosis
+        - verdict
+        - notes (optional)
+    Output:
+        - success message
+    """
+
+    def patch(self, request):
+        booking_id = request.data.get('booking_id')
+        if not booking_id:
+            return Response(
+                {"error": "booking_id is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        appointment = get_object_or_404(Appointment, id=booking_id)
+        serializer = AppointmentUpdateSerializer(appointment, data=request.data, partial=True)
+
+        if serializer.is_valid():
+            serializer.save()
+
+            # Update pet's weight if provided
+            weight = serializer.validated_data.get('weight')
+            if weight is not None:
+                pet = appointment.pet
+                pet.weight = weight
+                pet.save(update_fields=['weight'])
+
+            return Response(
+                {"success": True, "message": "Appointment completed successfully."},
+                status=status.HTTP_200_OK
+            )
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    
+class TreatmentHistoryAPIView(APIView):
+    """
+    GET - List all treatments conducted by a doctor on a specific date
+    Input:
+        doctor_id (required)
+        date (required, YYYY-MM-DD)
+    Output:
+        List of all treatments on that date
+    """
+
+    def get(self, request):
+        doctor_id = request.query_params.get('doctor_id')
+        date = request.query_params.get('date')
+
+        if not doctor_id or not date:
+            return Response(
+                {"error": "Both doctor_id and date are required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Validate doctor
+        doctor = get_object_or_404(Doctor, id=doctor_id)
+
+        # Get all appointments with diagnosis/verdict filled (treated cases)
+        appointments = Appointment.objects.filter(
+            doctor=doctor,
+            date=date
+        ).exclude(diagnosis__isnull=True).exclude(diagnosis__exact='')
+
+        serializer = TreatmentHistorySerializer(appointments, many=True)
+
+        return Response({
+            "success": True,
+            "doctor_id": doctor_id,
+            "date": date,
+            "treatments": serializer.data
+        }, status=status.HTTP_200_OK)
+        
+class TreatmentDetailAPIView(APIView):
+    """
+    GET - Fetch treatment details for a given appointment (booking)
+    Input:
+        booking_id (required)
+    Output:
+        Full treatment, doctor, and pet details (image paths start with media/)
+    """
+
+    def get(self, request):
+        booking_id = request.query_params.get('booking_id')
+
+        if not booking_id:
+            return Response(
+                {"error": "booking_id is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        appointment = get_object_or_404(Appointment, id=booking_id)
+        doctor = appointment.doctor
+        pet = appointment.pet
+
+        # Get relative image paths (media/...)
+        pet_image = pet.pet_image.url if pet.pet_image else None
+        doctor_image = doctor.image.url if doctor.image else None
+        doctor_id_card = doctor.id_card.url if doctor.id_card else None
+
+        treatment_data = {
+            "booking_id": appointment.id,
+            "date": appointment.date,
+            "slot": str(appointment.slot),
+            "reason": appointment.reason,
+            "symptoms": appointment.symptoms,
+            "diagnosis": appointment.diagnosis,
+            "verdict": appointment.verdict,
+            "notes": appointment.notes,
+
+            "pet_details": {
+                "name": pet.name,
+                "birth_date": pet.birth_date.strftime("%Y-%m-%d") if pet.birth_date else None,
+                "gender": pet.gender,
+                "weight": pet.weight,
+                "health_condition": getattr(pet, "health_condition", None),
+                "image": pet_image  # relative path: media/...
+            },
+
+            "doctor_details": {
+                "id": doctor.id,
+                "full_name": doctor.full_name,
+                "email": doctor.email,
+                "phone_number": doctor.phone_number,
+                "address": doctor.address,
+                "latitude": float(doctor.latitude),
+                "longitude": float(doctor.longitude),
+                "status": doctor.status,
+                "is_approved": doctor.is_approved,
+                "image": doctor_image,  # relative path: media/...
+                "id_card": doctor_id_card  # relative path: media/...
+            }
+        }
+
+        return Response(
+            {"success": True, "treatment_details": treatment_data},
+            status=status.HTTP_200_OK
+        )

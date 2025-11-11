@@ -59,6 +59,6 @@ class TimeSlot(models.Model):
     end_time = models.TimeField()
     is_available = models.BooleanField(default=True)
     def __str__(self):
-        return f"{self.start_time.strftime('%H:%M')} - {self.end_time.strftime('%H:%M')} ({self.doctor.name})"
+        return f"{self.start_time.strftime('%H:%M')} - {self.end_time.strftime('%H:%M')} ({self.doctor.full_name})"
     
     

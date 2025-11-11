@@ -44,4 +44,7 @@ urlpatterns = [
     path('doctor_profile/', DoctorProfileView.as_view(), name='doctor_profile'),
     path('today_bookings/', TodayBookingsAPIView.as_view(), name='today-bookings'),
     path('booking_details/', BookingDetailsAPIView.as_view(), name='booking-details'),
+    path('complete_appointments/', CompleteAppointmentAPIView.as_view(), name='complete-appointment'),
+    path('treatments_history/', TreatmentHistoryAPIView.as_view(), name='treatment-history'),
+    path('treatment_details/', TreatmentDetailAPIView.as_view(), name='treatment-detail'),
 ]

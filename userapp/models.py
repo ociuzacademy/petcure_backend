@@ -112,6 +112,9 @@ class Appointment(models.Model):
     slot = models.ForeignKey(TimeSlot, on_delete=models.CASCADE)
     reason = models.CharField(max_length=50, choices=REASON_CHOICES)
     symptoms = models.TextField(blank=True, null=True)
+    diagnosis = models.TextField(blank=True, null=True)
+    verdict = models.TextField(blank=True, null=True)
+    notes = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
