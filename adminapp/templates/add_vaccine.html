@@ -1,167 +1,157 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Vaccine - Admin</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f5f5f5;
-            padding: 20px;
-        }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        }
-        h2 {
-            color: #333;
-            border-bottom: 2px solid #4CAF50;
-            padding-bottom: 10px;
-        }
-        .form-group {
-            margin-bottom: 20px;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-            color: #555;
-        }
-        input[type="text"],
-        input[type="number"],
-        textarea,
-        select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-        textarea {
-            height: 100px;
-            resize: vertical;
-        }
-        .checkbox-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin: 10px 0;
-        }
-        .checkbox-group input {
-            width: auto;
-        }
-        .btn-submit {
-            background-color: #4CAF50;
-            color: white;
-            padding: 12px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        .btn-submit:hover {
-            background-color: #45a049;
-        }
-        .message {
-            padding: 10px;
-            margin-bottom: 20px;
-            border-radius: 4px;
-        }
-        .success {
-            background-color: #dff0d8;
-            color: #3c763d;
-            border: 1px solid #d6e9c6;
-        }
-        .error {
-            background-color: #f2dede;
-            color: #a94442;
-            border: 1px solid #ebccd1;
-        }
-        .required::after {
-            content: " *";
-            color: red;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h2>Add New Vaccine</h2>
+{% extends 'admin_index.html' %}
+{% block content %}
+<style>
+    body {
+        background-color: #55b5e8;
+    }
+    .container {
+        max-width: 800px;
+        margin: 50px auto;
+        background: white;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
+    }
+        
+    h2 {
+        color: #00477d;
+        border-bottom: 2px solid #00477d;
+        padding-bottom: 10px;
+    }
 
-        {% if messages %}
-            {% for message in messages %}
-                <div class="message {{ message.tags }}">
-                    {{ message }}
-                </div>
-            {% endfor %}
-        {% endif %}
+    .form-group {
+        margin-bottom: 20px;
+    }
+    label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+        color: #555;
+    }
+    input[type="text"],
+    input[type="number"],
+    textarea,
+    select {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+    textarea {
+        height: 100px;
+        resize: vertical;
+    }
+    .checkbox-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 10px 0;
+    }
+    .checkbox-group input {
+        width: auto;
+    }
 
-        <form method="POST" action="{% url 'add_vaccine' %}">
-            {% csrf_token %}
-            
-            <div class="form-group">
-                <label for="subcategory" class="required">Pet Subcategory</label>
-                <select id="subcategory" name="subcategory" required>
-                    <option value="">-- Select Subcategory --</option>
-                    {% for subcat in subcategories %}
-                        <option value="{{ subcat.id }}">{{ subcat.petsubcategory }} ({{ subcat.petcategory.petcategory }})</option>
-                    {% endfor %}
-                </select>
+    .btn-submit {
+        background-color: #00477d;
+        color: white;
+        padding: 12px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background-color 0.3s ease;
+    }
+
+    .btn-submit:hover {
+        background-color: #00365e;
+    }
+
+    .message {
+        padding: 10px;
+        margin-bottom: 20px;
+        border-radius: 4px;
+    }
+    .success {
+        background-color: #dff0d8;
+        color: #3c763d;
+        border: 1px solid #d6e9c6;
+    }
+    .error {
+        background-color: #f2dede;
+        color: #a94442;
+        border: 1px solid #ebccd1;
+    }
+    .required::after {
+        content: " *";
+        color: red;
+    }
+</style>
+
+<div class="container shadow-lg p-4 rounded" style="background-color: rgb(254, 254, 254);">
+    <h2 class="text-center mb-4" style="color:#00477d">Add New Vaccine</h2>
+    {% if messages %}
+        {% for message in messages %}
+            <div class="message {{ message.tags }}">
+                {{ message }}
             </div>
+        {% endfor %}
+    {% endif %}
+    <form method="POST" action="{% url 'add_vaccine' %}">
+        {% csrf_token %}
+        
+        <div class="mb-3">
+            <label for="subcategory" class="form-label required">Pet Subcategory</label>
+            <select id="subcategory" name="subcategory" class="form-select" required>
+                <option value="">-- Select Subcategory --</option>
+                {% for subcat in subcategories %}
+                    <option value="{{ subcat.id }}">{{ subcat.petsubcategory }} ({{ subcat.petcategory.petcategory }})</option>
+                {% endfor %}
+            </select>
+        </div>
 
-            <div class="form-group">
-                <label for="vaccine_name" class="required">Vaccine Name</label>
-                <input type="text" id="vaccine_name" name="vaccine_name" required 
-                       placeholder="e.g., Multi Component Vaccine">
-            </div>
+        <div class="form-group">
+            <label for="vaccine_name" class="required">Vaccine Name</label>
+            <input type="text" id="vaccine_name" name="vaccine_name" required 
+                   placeholder="e.g., Multi Component Vaccine">
+        </div>
+        <div class="form-group">
+            <label for="recommended_age" class="required">Recommended Age</label>
+            <input type="text" id="recommended_age" name="recommended_age" required 
+                   placeholder="e.g., 6 Weeks, 8 Weeks, 12 Weeks">
+        </div>
+        <div class="form-group">
+            <label for="disease_protected" class="required">Disease Protected</label>
+            <textarea id="disease_protected" name="disease_protected" required 
+                      placeholder="e.g., Canine distemper, Parvo viral infection, Kennel cough"></textarea>
+        </div>
+        <div class="checkbox-group">
+            <input type="checkbox" id="booster_required" name="booster_required">
+            <label for="booster_required">Booster Required</label>
+        </div>
+        <div class="form-group" id="booster_timing_group" style="display: none;">
+            <label for="booster_timing">Booster Timing</label>
+            <input type="text" id="booster_timing" name="booster_timing" 
+                   placeholder="e.g., 2-4 weeks after initial dose">
+        </div>
+        <div class="checkbox-group">
+            <input type="checkbox" id="annual_revaccination" name="annual_revaccination">
+            <label for="annual_revaccination">Annual Revaccination Required</label>
+        </div>
+        <button type="submit" class="btn-submit w-100">Add Vaccine</button>
+    </form>
+</div>
 
-            <div class="form-group">
-                <label for="recommended_age" class="required">Recommended Age</label>
-                <input type="text" id="recommended_age" name="recommended_age" required 
-                       placeholder="e.g., 6 Weeks, 8 Weeks, 12 Weeks">
-            </div>
-
-            <div class="form-group">
-                <label for="disease_protected" class="required">Disease Protected</label>
-                <textarea id="disease_protected" name="disease_protected" required 
-                          placeholder="e.g., Canine distemper, Parvo viral infection, Kennel cough"></textarea>
-            </div>
-
-            <div class="checkbox-group">
-                <input type="checkbox" id="booster_required" name="booster_required">
-                <label for="booster_required">Booster Required</label>
-            </div>
-
-            <div class="form-group" id="booster_timing_group" style="display: none;">
-                <label for="booster_timing">Booster Timing</label>
-                <input type="text" id="booster_timing" name="booster_timing" 
-                       placeholder="e.g., 2-4 weeks after initial dose">
-            </div>
-
-            <div class="checkbox-group">
-                <input type="checkbox" id="annual_revaccination" name="annual_revaccination">
-                <label for="annual_revaccination">Annual Revaccination Required</label>
-            </div>
-
-            <button type="submit" class="btn-submit">Add Vaccine</button>
-        </form>
-    </div>
-
-    <script>
-        // Show/hide booster timing field
-        document.getElementById('booster_required').addEventListener('change', function() {
-            const boosterTimingGroup = document.getElementById('booster_timing_group');
-            if (this.checked) {
-                boosterTimingGroup.style.display = 'block';
-            } else {
-                boosterTimingGroup.style.display = 'none';
-                document.getElementById('booster_timing').value = '';
-            }
-        });
-    </script>
-</body>
-</html>
+<script>
+    // Show/hide booster timing field
+    document.getElementById('booster_required').addEventListener('change', function() {
+        const boosterTimingGroup = document.getElementById('booster_timing_group');
+        if (this.checked) {
+            boosterTimingGroup.style.display = 'block';
+        } else {
+            boosterTimingGroup.style.display = 'none';
+            document.getElementById('booster_timing').value = '';
+        }
+    });
+</script>
+{% endblock %}

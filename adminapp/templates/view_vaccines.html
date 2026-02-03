@@ -1,397 +1,397 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>View Vaccines - Admin</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f5f5f5;
-            padding: 20px;
-        }
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-        }
-        
-        .modal-content {
-            background-color: white;
-            margin: 5% auto;
-            padding: 30px;
-            border-radius: 8px;
-            width: 80%;
-            max-width: 600px;
-            position: relative;
-        }
-        
-        .close {
-            position: absolute;
-            right: 20px;
-            top: 10px;
-            font-size: 24px;
-            cursor: pointer;
-        }
+{% extends 'admin_index.html' %}
+{% block content %}
+<style>
+    body {
+        background-color: #55b5e8;
+    }
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+    }
+    
+    .modal-content {
+        background-color: white;
+        margin: 5% auto;
+        padding: 30px;
+        border-radius: 8px;
+        width: 80%;
+        max-width: 600px;
+        position: relative;
+    }
+    
+    .close {
+        position: absolute;
+        right: 20px;
+        top: 10px;
+        font-size: 24px;
+        cursor: pointer;
+    }
+    .container {
+        max-width: 1200px;
+        margin: 50px auto;
+        background: white;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
+    }
+    h2 {
+        color: #00477d;
+        border-bottom: 2px solid #00477d;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+    }
+    .filters {
+        background: #f9f9f9;
+        padding: 20px;
+        border-radius: 5px;
+        margin-bottom: 30px;
+        border: 1px solid #ddd;
+    }
+    .filter-group {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 15px;
+        flex-wrap: wrap;
+    }
+    .filter-item {
+        flex: 1;
+        min-width: 200px;
+    }
+    label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+        color: #555;
+    }
+    select {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+    .btn {
+        background-color: #00477d;
+        color: white;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        transition: background-color 0.3s ease;
+    }
+    .btn:hover {
+        background-color: #00365e;
+    }
+    .btn-clear {
+        background-color: #6c757d;
+    }
+    .btn-clear:hover {
+        background-color: #5a6268;
+    }
+    .btn-custom {
+        background-color: #00477d;
+        color: #fff;
+        border: none;
+        transition: background-color 0.3s ease;
+    }
+    
+    .btn-custom:hover {
+        background-color: #00365e;
+        color: #fff;
+    }
+    .vaccine-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+    .vaccine-table th,
+    .vaccine-table td {
+        padding: 12px 15px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+    }
+    .vaccine-table th {
+        background-color: #00477d;
+        color: white;
+        font-weight: bold;
+    }
+    .vaccine-table tr:hover {
+        background-color: #f5f5f5;
+    }
+    .badge {
+        display: inline-block;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: bold;
+    }
+    .badge-yes {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    .badge-no {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    .empty-state {
+        text-align: center;
+        padding: 40px;
+        color: #666;
+    }
+    .empty-state i {
+        font-size: 48px;
+        margin-bottom: 20px;
+        color: #ccc;
+    }
+    .action-buttons {
+        display: flex;
+        gap: 10px;
+    }
+    .btn-edit {
+        background-color: #00477d;
+        padding: 5px 10px;
+        font-size: 12px;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+    .btn-edit:hover {
+        background-color: #00365e;
+    }
+    .btn-delete {
+        background-color: #dc3545;
+        padding: 5px 10px;
+        font-size: 12px;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    .count-badge {
+        background-color: #00477d;
+        color: white;
+        padding: 3px 8px;
+        border-radius: 10px;
+        font-size: 14px;
+        margin-left: 10px;
+    }
+    .form-group {
+        margin-bottom: 15px;
+    }
+    .form-control {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-sizing: border-box;
+    }
+    .checkbox-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 10px 0;
+    }
+</style>
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        }
-        h2 {
-            color: #333;
-            border-bottom: 2px solid #4CAF50;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-        }
-        .filters {
-            background: #f9f9f9;
-            padding: 20px;
-            border-radius: 5px;
-            margin-bottom: 30px;
-            border: 1px solid #ddd;
-        }
-        .filter-group {
-            display: flex;
-            gap: 20px;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
-        }
-        .filter-item {
-            flex: 1;
-            min-width: 200px;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-            color: #555;
-        }
-        select {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        .btn {
-            background-color: #4CAF50;
-            color: white;
-            padding: 8px 16px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-block;
-        }
-        .btn:hover {
-            background-color: #45a049;
-        }
-        .btn-clear {
-            background-color: #6c757d;
-        }
-        .btn-clear:hover {
-            background-color: #5a6268;
-        }
-        .vaccine-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        .vaccine-table th,
-        .vaccine-table td {
-            padding: 12px 15px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
-        .vaccine-table th {
-            background-color: #4CAF50;
-            color: white;
-            font-weight: bold;
-        }
-        .vaccine-table tr:hover {
-            background-color: #f5f5f5;
-        }
-        .badge {
-            display: inline-block;
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: bold;
-        }
-        .badge-yes {
-            background-color: #d4edda;
-            color: #155724;
-        }
-        .badge-no {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-        .empty-state {
-            text-align: center;
-            padding: 40px;
-            color: #666;
-        }
-        .empty-state i {
-            font-size: 48px;
-            margin-bottom: 20px;
-            color: #ccc;
-        }
-        .action-buttons {
-            display: flex;
-            gap: 10px;
-        }
-        .btn-edit {
-            background-color: #007bff;
-            padding: 5px 10px;
-            font-size: 12px;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .btn-delete {
-            background-color: #dc3545;
-            padding: 5px 10px;
-            font-size: 12px;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .count-badge {
-            background-color: #4CAF50;
-            color: white;
-            padding: 3px 8px;
-            border-radius: 10px;
-            font-size: 14px;
-            margin-left: 10px;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        .form-control {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-        .checkbox-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin: 10px 0;
-        }
-    </style>
-</head>
-
-<body>
-    <div class="container">
-        <h2>Vaccine Management <span class="count-badge">{{ vaccines.count }} Vaccines</span></h2>
-        
-        <div class="filters">
-            <h3 style="margin-top: 0; color: #555;">Filter Vaccines</h3>
-            <form method="GET" action="{% url 'view_vaccines' %}">
-                <div class="filter-group">
-                    <div class="filter-item">
-                        <label for="petcategory">Pet Category</label>
-                        <select id="petcategory" name="petcategory" onchange="this.form.submit()">
-                            <option value="">All Categories</option>
-                            {% for category in pet_categories %}
-                                <option value="{{ category.id }}" 
-                                    {% if selected_petcategory == category.id|stringformat:"s" %}selected{% endif %}>
-                                    {{ category.petcategory }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="filter-item">
-                        <label for="subcategory">Subcategory</label>
-                        <select id="subcategory" name="subcategory" onchange="this.form.submit()">
-                            <option value="">All Subcategories</option>
-                            {% for subcat in pet_subcategories %}
-                                <option value="{{ subcat.id }}"
-                                    {% if selected_subcategory == subcat.id|stringformat:"s" %}selected{% endif %}>
-                                    {{ subcat.petsubcategory }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </div>
+<div class="container shadow-lg p-4 rounded" style="background-color: rgb(254, 254, 254);">
+    <h2 class="mb-3" style="color:#00477d">Vaccine Management <span class="count-badge">{{ vaccines.count }} Vaccines</span></h2>
+    
+    <div class="filters">
+        <h3 style="margin-top: 0; color: #555;">Filter Vaccines</h3>
+        <form method="GET" action="{% url 'view_vaccines' %}">
+            <div class="filter-group">
+                <div class="filter-item">
+                    <label for="petcategory">Pet Category</label>
+                    <select id="petcategory" name="petcategory" onchange="this.form.submit()">
+                        <option value="">All Categories</option>
+                        {% for category in pet_categories %}
+                            <option value="{{ category.id }}" 
+                                {% if selected_petcategory == category.id|stringformat:"s" %}selected{% endif %}>
+                                {{ category.petcategory }}
+                            </option>
+                        {% endfor %}
+                    </select>
                 </div>
-                <div style="display: flex; gap: 10px; margin-top: 10px;">
-                    <button type="submit" class="btn">Apply Filters</button>
-                    <a href="{% url 'view_vaccines' %}" class="btn btn-clear">Clear Filters</a>
+                <div class="filter-item">
+                    <label for="subcategory">Subcategory</label>
+                    <select id="subcategory" name="subcategory" onchange="this.form.submit()">
+                        <option value="">All Subcategories</option>
+                        {% for subcat in pet_subcategories %}
+                            <option value="{{ subcat.id }}"
+                                {% if selected_subcategory == subcat.id|stringformat:"s" %}selected{% endif %}>
+                                {{ subcat.petsubcategory }}
+                            </option>
+                        {% endfor %}
+                    </select>
                 </div>
-            </form>
-        </div>
-
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <div>
-                <a href="{% url 'add_vaccine' %}" class="btn">+ Add New Vaccine</a>
             </div>
-            <div>
-                {% if selected_petcategory or selected_subcategory %}
-                    <small style="color: #666;">
-                        Showing filtered results
-                        {% if selected_petcategory %}
-                            • Category: 
-                            {% for category in pet_categories %}
-                                {% if category.id == selected_petcategory|add:0 %}
-                                    {{ category.petcategory }}
-                                {% endif %}
-                            {% endfor %}
-                        {% endif %}
-                        {% if selected_subcategory %}
-                            • Subcategory: 
-                            {% for subcat in pet_subcategories %}
-                                {% if subcat.id == selected_subcategory|add:0 %}
-                                    {{ subcat.petsubcategory }}
-                                {% endif %}
-                            {% endfor %}
-                        {% endif %}
-                    </small>
-                {% endif %}
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button type="submit" class="btn">Apply Filters</button>
+                <a href="{% url 'view_vaccines' %}" class="btn btn-clear">Clear Filters</a>
             </div>
-        </div>
-
-        {% if vaccines %}
-            <table class="vaccine-table">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Vaccine Name</th>
-                        <th>Category</th>
-                        <th>Subcategory</th>
-                        <th>Recommended Age</th>
-                        <th>Booster Required</th>
-                        <th>Annual Revaccination</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for vaccine in vaccines %}
-                    <tr>
-                        <td>{{ vaccine.id }}</td>
-                        <td>
-                            <strong>{{ vaccine.vaccine_name }}</strong>
-                            {% if vaccine.disease_protected %}
-                                <br><small style="color: #666; white-space: pre-line;">{{ vaccine.disease_protected|truncatechars:100 }}</small>
-                            {% endif %}
-                        </td>
-                        <td>{{ vaccine.subcategory.petcategory.petcategory }}</td>
-                        <td>{{ vaccine.subcategory.petsubcategory }}</td>
-                        <td>{{ vaccine.recommended_age }}</td>
-                        <td>
-                            {% if vaccine.booster_required %}
-                                <span class="badge badge-yes">Yes</span>
-                                {% if vaccine.booster_timing %}
-                                    <br><small>{{ vaccine.booster_timing }}</small>
-                                {% endif %}
-                            {% else %}
-                                <span class="badge badge-no">No</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if vaccine.annual_revaccination %}
-                                <span class="badge badge-yes">Yes</span>
-                            {% else %}
-                                <span class="badge badge-no">No</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <div class="action-buttons">
-                                <button type="button" class="btn btn-edit edit-vaccine-btn"
-                                        data-id="{{ vaccine.id }}"
-                                        data-name="{{ vaccine.vaccine_name }}"
-                                        data-age="{{ vaccine.recommended_age }}"
-                                        data-disease="{{ vaccine.disease_protected }}"
-                                        data-booster="{{ vaccine.booster_required|yesno:'true,false' }}"
-                                        data-booster-timing="{{ vaccine.booster_timing }}"
-                                        data-annual="{{ vaccine.annual_revaccination|yesno:'true,false' }}">
-                                    Edit
-                                </button>
-                                
-                                <form method="POST" action="{% url 'delete_vaccine' %}" style="display: inline;" 
-                                      onsubmit="return confirm('Are you sure you want to delete {{ vaccine.vaccine_name|escapejs }}?');">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="vaccine_id" value="{{ vaccine.id }}">
-                                    <button type="submit" class="btn btn-delete">Delete</button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        {% else %}
-            <div class="empty-state">
-                <div>📋</div>
-                <h3>No Vaccines Found</h3>
-                <p>{% if selected_petcategory or selected_subcategory %}
-                    No vaccines match your filter criteria.
-                   {% else %}
-                    No vaccines have been added yet.
-                   {% endif %}</p>
-                <a href="{% url 'add_vaccine' %}" class="btn">Add Your First Vaccine</a>
-            </div>
-        {% endif %}
+        </form>
     </div>
-
-    <!-- Edit Vaccine Modal -->
-    <div id="editModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeEditModal()">&times;</span>
-            <h3 style="margin-top: 0;">Edit Vaccine</h3>
-            <form id="editVaccineForm" method="POST" action="{% url 'edit_vaccine' %}">
-                {% csrf_token %}
-                <input type="hidden" id="edit_vaccine_id" name="vaccine_id">
-
-                <div class="form-group">
-                    <label>Vaccine Name</label>
-                    <input type="text" id="edit_vaccine_name" name="vaccine_name" required class="form-control">
-                </div>
-
-                <div class="form-group">
-                    <label>Recommended Age</label>
-                    <input type="text" id="edit_recommended_age" name="recommended_age" required class="form-control">
-                </div>
-
-                <div class="form-group">
-                    <label>Disease Protected</label>
-                    <textarea id="edit_disease_protected" name="disease_protected" required class="form-control" style="height: 100px;"></textarea>
-                </div>
-
-                <div class="checkbox-group">
-                    <input type="checkbox" id="edit_booster_required" name="booster_required">
-                    <label for="edit_booster_required">Booster Required</label>
-                </div>
-
-                <div class="form-group" id="edit_booster_timing_group" style="display: none;">
-                    <label>Booster Timing</label>
-                    <input type="text" id="edit_booster_timing" name="booster_timing" class="form-control">
-                </div>
-
-                <div class="checkbox-group">
-                    <input type="checkbox" id="edit_annual_revaccination" name="annual_revaccination">
-                    <label for="edit_annual_revaccination">Annual Revaccination Required</label>
-                </div>
-
-                <div style="display: flex; gap: 10px; margin-top: 20px;">
-                    <button type="submit" class="btn">Save Changes</button>
-                    <button type="button" class="btn btn-clear" onclick="closeEditModal()">Cancel</button>
-                </div>
-            </form>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div>
+            <a href="{% url 'add_vaccine' %}" class="btn btn-custom">+ Add New Vaccine</a>
+        </div>
+        <div>
+            {% if selected_petcategory or selected_subcategory %}
+                <small style="color: #666;">
+                    Showing filtered results
+                    {% if selected_petcategory %}
+                        • Category: 
+                        {% for category in pet_categories %}
+                            {% if category.id == selected_petcategory|add:0 %}
+                                {{ category.petcategory }}
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+                    {% if selected_subcategory %}
+                        • Subcategory: 
+                        {% for subcat in pet_subcategories %}
+                            {% if subcat.id == selected_subcategory|add:0 %}
+                                {{ subcat.petsubcategory }}
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+                </small>
+            {% endif %}
         </div>
     </div>
+    {% if vaccines %}
+        <div class="table-responsive">
+        <table class="vaccine-table table table-striped table-bordered">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Vaccine Name</th>
+                    <th>Category</th>
+                    <th>Subcategory</th>
+                    <th>Recommended Age</th>
+                    <th>Booster Required</th>
+                    <th>Annual Revaccination</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for vaccine in vaccines %}
+                <tr>
+                    <td>{{ vaccine.id }}</td>
+                    <td>
+                        <strong>{{ vaccine.vaccine_name }}</strong>
+                        {% if vaccine.disease_protected %}
+                            <br><small style="color: #666; white-space: pre-line;">{{ vaccine.disease_protected|truncatechars:100 }}</small>
+                        {% endif %}
+                    </td>
+                    <td>{{ vaccine.subcategory.petcategory.petcategory }}</td>
+                    <td>{{ vaccine.subcategory.petsubcategory }}</td>
+                    <td>{{ vaccine.recommended_age }}</td>
+                    <td>
+                        {% if vaccine.booster_required %}
+                            <span class="badge badge-yes">Yes</span>
+                            {% if vaccine.booster_timing %}
+                                <br><small>{{ vaccine.booster_timing }}</small>
+                            {% endif %}
+                        {% else %}
+                            <span class="badge badge-no">No</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if vaccine.annual_revaccination %}
+                            <span class="badge badge-yes">Yes</span>
+                        {% else %}
+                            <span class="badge badge-no">No</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="action-buttons">
+                            <button type="button" class="btn btn-edit edit-vaccine-btn"
+                                    data-id="{{ vaccine.id }}"
+                                    data-name="{{ vaccine.vaccine_name }}"
+                                    data-age="{{ vaccine.recommended_age }}"
+                                    data-disease="{{ vaccine.disease_protected }}"
+                                    data-booster="{{ vaccine.booster_required|yesno:'true,false' }}"
+                                    data-booster-timing="{{ vaccine.booster_timing }}"
+                                    data-annual="{{ vaccine.annual_revaccination|yesno:'true,false' }}">
+                                Edit
+                            </button>
+                            
+                            <form method="POST" action="{% url 'delete_vaccine' %}" style="display: inline;" 
+                                  onsubmit="return confirm('Are you sure you want to delete {{ vaccine.vaccine_name|escapejs }}?');">
+                                {% csrf_token %}
+                                <input type="hidden" name="vaccine_id" value="{{ vaccine.id }}">
+                                <button type="submit" class="btn btn-delete">Delete</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% else %}
+
+        <div class="empty-state">
+            <div>📋</div>
+            <h3>No Vaccines Found</h3>
+            <p>{% if selected_petcategory or selected_subcategory %}
+                No vaccines match your filter criteria.
+               {% else %}
+                No vaccines have been added yet.
+               {% endif %}</p>
+            <a href="{% url 'add_vaccine' %}" class="btn">Add Your First Vaccine</a>
+        </div>
+    {% endif %}
+</div>
+<!-- Edit Vaccine Modal -->
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeEditModal()">&times;</span>
+        <h3 style="margin-top: 0;">Edit Vaccine</h3>
+        <form id="editVaccineForm" method="POST" action="{% url 'edit_vaccine' %}">
+            {% csrf_token %}
+            <input type="hidden" id="edit_vaccine_id" name="vaccine_id">
+            <div class="form-group">
+                <label>Vaccine Name</label>
+                <input type="text" id="edit_vaccine_name" name="vaccine_name" required class="form-control">
+            </div>
+            <div class="form-group">
+                <label>Recommended Age</label>
+                <input type="text" id="edit_recommended_age" name="recommended_age" required class="form-control">
+            </div>
+            <div class="form-group">
+                <label>Disease Protected</label>
+                <textarea id="edit_disease_protected" name="disease_protected" required class="form-control" style="height: 100px;"></textarea>
+            </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="edit_booster_required" name="booster_required">
+                <label for="edit_booster_required">Booster Required</label>
+            </div>
+            <div class="form-group" id="edit_booster_timing_group" style="display: none;">
+                <label>Booster Timing</label>
+                <input type="text" id="edit_booster_timing" name="booster_timing" class="form-control">
+            </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="edit_annual_revaccination" name="annual_revaccination">
+                <label for="edit_annual_revaccination">Annual Revaccination Required</label>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button type="submit" class="btn">Save Changes</button>
+                <button type="button" class="btn btn-clear" onclick="closeEditModal()">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
 
 <script>
     // Function to open edit modal
@@ -462,5 +462,4 @@
     });
 </script>
 
-</body>
-</html>
+{% endblock %}
