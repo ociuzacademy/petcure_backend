@@ -41,16 +41,31 @@ class Doctor(models.Model):
             self.generate_slots()
 
     def generate_slots(self):
-        start_hour = 10
-        end_hour = 17
-        for hour in range(start_hour, end_hour):
-            start_time = time(hour, 0)
-            end_time = (datetime.combine(datetime.today(), start_time) + timedelta(hours=1)).time()
-            TimeSlot.objects.get_or_create(
-                doctor=self,
-                start_time=start_time,
-                end_time=end_time
-            )
+        # Create 15-minute slots (4 slots per hour)
+        # Morning session: 10:00 AM to 12:00 PM
+        for hour in range(10, 12):
+            for minute in [0, 15, 30, 45]:  # 4 slots per hour at 15-minute intervals
+                start_time = time(hour, minute)
+                end_time = (datetime.combine(datetime.today(), start_time) + timedelta(minutes=15)).time()
+                TimeSlot.objects.get_or_create(
+                    doctor=self,
+                    start_time=start_time,
+                    end_time=end_time
+                )
+        
+        # Skip lunch break (12:00 PM to 1:00 PM)
+        # No slots created for this interval
+        
+        # Afternoon session: 1:00 PM to 5:00 PM
+        for hour in range(13, 17):
+            for minute in [0, 15, 30, 45]:  # 4 slots per hour at 15-minute intervals
+                start_time = time(hour, minute)
+                end_time = (datetime.combine(datetime.today(), start_time) + timedelta(minutes=15)).time()
+                TimeSlot.objects.get_or_create(
+                    doctor=self,
+                    start_time=start_time,
+                    end_time=end_time
+                )
     
     
 class TimeSlot(models.Model):
@@ -61,4 +76,38 @@ class TimeSlot(models.Model):
     def __str__(self):
         return f"{self.start_time.strftime('%H:%M')} - {self.end_time.strftime('%H:%M')} ({self.doctor.full_name})"
     
+class DoctorFeedback(models.Model):
+    RATING_CHOICES = [
+        (1, '★☆☆☆☆'),
+        (2, '★★☆☆☆'),
+        (3, '★★★☆☆'),
+        (4, '★★★★☆'),
+        (5, '★★★★★'),
+    ]
     
+    doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, related_name='feedbacks')
+    user_name = models.CharField(max_length=100)
+    rating = models.IntegerField(choices=RATING_CHOICES)
+    feedback = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"Feedback for {self.doctor.full_name} by {self.user_name} - {self.get_rating_display()}"
+    
+class DoctorComplaint(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('resolved', 'Resolved'),
+        ('dismissed', 'Dismissed'),
+    ]
+    
+    doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, related_name='complaints')
+    user_name = models.CharField(max_length=100)
+    complaint = models.TextField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    admin_notes = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    resolved_at = models.DateTimeField(blank=True, null=True)
+    
+    def __str__(self):
+        return f"Complaint against {self.doctor.full_name} by {self.user_name} - {self.status}"

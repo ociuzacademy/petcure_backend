@@ -39,4 +39,10 @@ urlpatterns = [
     path('doctors/rejected/', rejected_doctors, name='rejected_doctors'),
     path('admin/order/<int:order_id>/', admin_order_detail, name='admin_order_detail'),
     path("admin/feedback-complaints/", admin_feedback_complaint_view, name="admin_feedback_complaints"),
+    path('api/doctor/feedback/', views.get_doctor_feedback, name='get_doctor_feedback'),
+    path('api/doctor/feedback/<int:doctor_id>/', views.get_doctor_feedback, name='get_doctor_feedback_by_id'),
+    path('api/doctor/complaints/', views.get_doctor_complaints, name='get_doctor_complaints'),
+    path('api/doctor/complaints/<int:doctor_id>/', views.get_doctor_complaints, name='get_doctor_complaints_by_id'),
+    path('api/doctor/complaint/<int:complaint_id>/update/', views.update_complaint_status, name='update_complaint_status'),
+    path('api/doctor/feedback/submit/', views.submit_doctor_feedback, name='submit_doctor_feedback'),
 ]

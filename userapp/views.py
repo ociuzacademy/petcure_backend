@@ -165,8 +165,6 @@ def get_next_vaccine_for_pet(pet):
         if vaccines_not_taken:
             return vaccines_not_taken[0][0]  # Return earliest vaccine
     
-    return None
-    
     # STRATEGY 2: Check for annual revaccinations
     annual_vaccines = available_vaccines.filter(annual_revaccination=True)
     

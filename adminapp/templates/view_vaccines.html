@@ -211,7 +211,7 @@
             <div class="filter-group">
                 <div class="filter-item">
                     <label for="petcategory">Pet Category</label>
-                    <select id="petcategory" name="petcategory" onchange="this.form.submit()">
+                    <select id="petcategory" name="petcategory">
                         <option value="">All Categories</option>
                         {% for category in pet_categories %}
                             <option value="{{ category.id }}" 
@@ -223,7 +223,7 @@
                 </div>
                 <div class="filter-item">
                     <label for="subcategory">Subcategory</label>
-                    <select id="subcategory" name="subcategory" onchange="this.form.submit()">
+                    <select id="subcategory" name="subcategory">
                         <option value="">All Subcategories</option>
                         {% for subcat in pet_subcategories %}
                             <option value="{{ subcat.id }}"
@@ -240,32 +240,10 @@
             </div>
         </form>
     </div>
+
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <div>
             <a href="{% url 'add_vaccine' %}" class="btn btn-custom">+ Add New Vaccine</a>
-        </div>
-        <div>
-            {% if selected_petcategory or selected_subcategory %}
-                <small style="color: #666;">
-                    Showing filtered results
-                    {% if selected_petcategory %}
-                        • Category: 
-                        {% for category in pet_categories %}
-                            {% if category.id == selected_petcategory|add:0 %}
-                                {{ category.petcategory }}
-                            {% endif %}
-                        {% endfor %}
-                    {% endif %}
-                    {% if selected_subcategory %}
-                        • Subcategory: 
-                        {% for subcat in pet_subcategories %}
-                            {% if subcat.id == selected_subcategory|add:0 %}
-                                {{ subcat.petsubcategory }}
-                            {% endif %}
-                        {% endfor %}
-                    {% endif %}
-                </small>
-            {% endif %}
         </div>
     </div>
     {% if vaccines %}

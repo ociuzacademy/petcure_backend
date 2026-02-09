@@ -51,7 +51,13 @@ class Pet(models.Model):
                 return f"{months} months"
             else:
                 years = age_days // 365
-                return f"{years} years"
+                remaining_days = age_days % 365
+                months = remaining_days // 30
+                
+                if months > 0:
+                    return f"{years} year{'s' if years > 1 else ''}, {months} month{'s' if months > 1 else ''}"
+                else:
+                    return f"{years} year{'s' if years > 1 else ''}"
         return "Unknown"
     
     
@@ -212,8 +218,8 @@ class Appointment(models.Model):
             date=self.date
         ).exclude(status='cancelled').count()
         
-        # Update slot availability based on count
-        if booked_count >= 6:
+        # Update slot availability based on count (4 max per 15-minute slot)
+        if booked_count >= 4:
             self.slot.is_available = False
         else:
             self.slot.is_available = True

@@ -308,16 +308,16 @@ class AppointmentSerializer(serializers.ModelSerializer): #Used for creating/val
         if slot.doctor != doctor:
             raise serializers.ValidationError("Selected slot does not belong to this doctor.")
 
-        # 👉 Allow max 6 appointments for the same doctor-slot-date
+        # 👉 Allow max 4 appointments for the same doctor-slot-date (15-minute slots)
         existing = Appointment.objects.filter(
             doctor=doctor,
             slot=slot,
             date=appointment_date
         ).exclude(status='cancelled').count()
 
-        if existing >= 6:
-            raise serializers.ValidationError("This slot is fully booked (maximum 6 appointments).")
-
+        if existing >= 4:
+            raise serializers.ValidationError("This slot is fully booked (maximum 4 appointments).")
+        
         # Clinical → reason required
         if appointment_type == "clinical" and not data.get("reason"):
             raise serializers.ValidationError("Reason is required for clinical appointments.")

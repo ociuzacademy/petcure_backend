@@ -4,6 +4,10 @@ from .models import *
 from deliveryapp.models import *
 from userapp.models import *
 from django.template.defaulttags import register
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import json
+from django.core.paginator import Paginator
 
 @register.filter
 def get_item(dictionary, key):
@@ -633,3 +637,228 @@ def add_product_category(request):
     # Show all existing categories
     categories = ProductCategory.objects.all().order_by('-id')
     return render(request, 'add_product_category.html', {'categories': categories})
+
+
+@csrf_exempt
+def get_doctor_feedback(request, doctor_id=None):
+    """API to get feedback for a specific doctor or all doctors"""
+    try:
+        if doctor_id:
+            # Get feedback for specific doctor
+            doctor = Doctor.objects.get(id=doctor_id)
+            feedbacks = DoctorFeedback.objects.filter(doctor=doctor).order_by('-created_at')
+        else:
+            # Get feedback for all doctors
+            feedbacks = DoctorFeedback.objects.all().order_by('-created_at')
+        
+        # Pagination
+        page = request.GET.get('page', 1)
+        paginator = Paginator(feedbacks, 10)  # 10 items per page
+        feedback_page = paginator.get_page(page)
+        
+        feedback_list = []
+        for feedback in feedback_page:
+            feedback_list.append({
+                'id': feedback.id,
+                'doctor_id': feedback.doctor.id,
+                'doctor_name': feedback.doctor.full_name,
+                'user_name': feedback.user_name,
+                'rating': feedback.rating,
+                'rating_display': feedback.get_rating_display(),
+                'feedback': feedback.feedback,
+                'created_at': feedback.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            })
+        
+        response_data = {
+            'success': True,
+            'feedbacks': feedback_list,
+            'total_pages': paginator.num_pages,
+            'current_page': feedback_page.number,
+            'has_next': feedback_page.has_next(),
+            'has_previous': feedback_page.has_previous(),
+        }
+        
+        return JsonResponse(response_data)
+        
+    except Doctor.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'error': 'Doctor not found'
+        }, status=404)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@csrf_exempt
+def get_doctor_complaints(request, doctor_id=None):
+    """API to get complaints for a specific doctor or all doctors"""
+    try:
+        if doctor_id:
+            # Get complaints for specific doctor
+            doctor = Doctor.objects.get(id=doctor_id)
+            complaints = DoctorComplaint.objects.filter(doctor=doctor).order_by('-created_at')
+        else:
+            # Get complaints for all doctors
+            complaints = DoctorComplaint.objects.all().order_by('-created_at')
+        
+        # Filter by status if provided
+        status_filter = request.GET.get('status')
+        if status_filter:
+            complaints = complaints.filter(status=status_filter)
+        
+        # Pagination
+        page = request.GET.get('page', 1)
+        paginator = Paginator(complaints, 10)  # 10 items per page
+        complaints_page = paginator.get_page(page)
+        
+        complaints_list = []
+        for complaint in complaints_page:
+            complaints_list.append({
+                'id': complaint.id,
+                'doctor_id': complaint.doctor.id,
+                'doctor_name': complaint.doctor.full_name,
+                'user_name': complaint.user_name,
+                'complaint': complaint.complaint,
+                'status': complaint.status,
+                'admin_notes': complaint.admin_notes,
+                'created_at': complaint.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                'resolved_at': complaint.resolved_at.strftime('%Y-%m-%d %H:%M:%S') if complaint.resolved_at else None,
+            })
+        
+        response_data = {
+            'success': True,
+            'complaints': complaints_list,
+            'total_pages': paginator.num_pages,
+            'current_page': complaints_page.number,
+            'has_next': complaints_page.has_next(),
+            'has_previous': complaints_page.has_previous(),
+        }
+        
+        return JsonResponse(response_data)
+        
+    except Doctor.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'error': 'Doctor not found'
+        }, status=404)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+@csrf_exempt
+def update_complaint_status(request, complaint_id):
+    """API to update the status of a doctor complaint"""
+    if request.method != 'POST':
+        return JsonResponse({
+            'success': False,
+            'error': 'Only POST method is allowed'
+        }, status=405)
+    
+    try:
+        data = json.loads(request.body)
+        status = data.get('status')
+        admin_notes = data.get('admin_notes', '')
+        
+        if status not in ['pending', 'resolved', 'dismissed']:
+            return JsonResponse({
+                'success': False,
+                'error': 'Invalid status. Must be one of: pending, resolved, dismissed'
+            }, status=400)
+        
+        complaint = DoctorComplaint.objects.get(id=complaint_id)
+        complaint.status = status
+        complaint.admin_notes = admin_notes
+        
+        if status == 'resolved' and not complaint.resolved_at:
+            from django.utils import timezone
+            complaint.resolved_at = timezone.now()
+        elif status != 'resolved':
+            complaint.resolved_at = None
+            
+        complaint.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Complaint status updated to {status}',
+            'complaint': {
+                'id': complaint.id,
+                'status': complaint.status,
+                'admin_notes': complaint.admin_notes,
+                'resolved_at': complaint.resolved_at.strftime('%Y-%m-%d %H:%M:%S') if complaint.resolved_at else None,
+            }
+        })
+        
+    except DoctorComplaint.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'error': 'Complaint not found'
+        }, status=404)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@csrf_exempt
+def submit_doctor_feedback(request):
+    """API to submit feedback for a doctor"""
+    if request.method != 'POST':
+        return JsonResponse({
+            'success': False,
+            'error': 'Only POST method is allowed'
+        }, status=405)
+    
+    try:
+        data = json.loads(request.body)
+        doctor_id = data.get('doctor_id')
+        user_name = data.get('user_name')
+        rating = data.get('rating')
+        feedback = data.get('feedback')
+        
+        # Validate required fields
+        if not all([doctor_id, user_name, rating, feedback]):
+            return JsonResponse({
+                'success': False,
+                'error': 'Missing required fields: doctor_id, user_name, rating, feedback'
+            }, status=400)
+        
+        # Validate rating
+        if rating not in [1, 2, 3, 4, 5]:
+            return JsonResponse({
+                'success': False,
+                'error': 'Rating must be between 1 and 5'
+            }, status=400)
+        
+        doctor = Doctor.objects.get(id=doctor_id)
+        
+        # Create feedback
+        doctor_feedback = DoctorFeedback.objects.create(
+            doctor=doctor,
+            user_name=user_name,
+            rating=rating,
+            feedback=feedback
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Feedback submitted successfully',
+            'feedback_id': doctor_feedback.id,
+            'created_at': doctor_feedback.created_at.strftime('%Y-%m-%d %H:%M:%S')
+        })
+        
+    except Doctor.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'error': 'Doctor not found'
+        }, status=404)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)

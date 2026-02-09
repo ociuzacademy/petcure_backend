@@ -466,6 +466,12 @@
             <!-- Top Navbar -->
             <nav class="navbar navbar-expand-lg navbar-light bg-aaprimary">
                 <div class="container-fluid">
+                    <!-- Navigation Buttons -->
+                    <div style="display: flex; gap: 10px; margin-right: 20px;">
+                        <a href="javascript:history.back()" class="btn btn-secondary" style="background-color: #6c757d; border-color: #6c757d;">← Back</a>
+                        <a href="{% url 'admin_index' %}" class="btn btn-primary" style="background-color: #00477d; border-color: #00477d;"> Home</a>
+                    </div>
+                    
                     <!-- Hamburger Menu -->
                     <label class="hamburger">
                         <input type="checkbox">
