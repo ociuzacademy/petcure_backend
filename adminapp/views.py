@@ -644,12 +644,12 @@ def get_doctor_feedback(request, doctor_id=None):
     """API to get feedback for a specific doctor or all doctors"""
     try:
         if doctor_id:
-            # Get feedback for specific doctor
+            # Get feedback for specific doctor from Feedback model
             doctor = Doctor.objects.get(id=doctor_id)
-            feedbacks = DoctorFeedback.objects.filter(doctor=doctor).order_by('-created_at')
+            feedbacks = Feedback.objects.filter(appointment__doctor=doctor).order_by('-created_at')
         else:
-            # Get feedback for all doctors
-            feedbacks = DoctorFeedback.objects.all().order_by('-created_at')
+            # Get feedback for all doctors from Feedback model
+            feedbacks = Feedback.objects.all().order_by('-created_at')
         
         # Pagination
         page = request.GET.get('page', 1)
@@ -658,11 +658,19 @@ def get_doctor_feedback(request, doctor_id=None):
         
         feedback_list = []
         for feedback in feedback_page:
+            # Get doctor information from appointment
+            doctor = feedback.appointment.doctor if feedback.appointment else None
+            
+            # Get user information
+            user_name = feedback.user_name
+            if feedback.appointment and feedback.appointment.pet and feedback.appointment.pet.user:
+                user_name = feedback.appointment.pet.user.username
+            
             feedback_list.append({
                 'id': feedback.id,
-                'doctor_id': feedback.doctor.id,
-                'doctor_name': feedback.doctor.full_name,
-                'user_name': feedback.user_name,
+                'doctor_id': doctor.id if doctor else None,
+                'doctor_name': doctor.full_name if doctor else 'Unknown Doctor',
+                'user_name': user_name,
                 'rating': feedback.rating,
                 'rating_display': feedback.get_rating_display(),
                 'feedback': feedback.feedback,

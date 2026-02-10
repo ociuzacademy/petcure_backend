@@ -50,4 +50,5 @@ urlpatterns = [
     path("update-profile/", UpdateDoctorProfileView.as_view(),name='update-doctor-profile'),
     path('doctor_feedbacks/', DoctorFeedbackListView.as_view(), name='doctor_feedbacks'),
     path('doctor_complaints/', DoctorComplaintListView.as_view(), name='doctor_complaints'),
+    path('manage-slots/', DoctorSlotManagementView.as_view(), name='doctor_manage_slots'),
 ]

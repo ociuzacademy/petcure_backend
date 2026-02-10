@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework import status,viewsets,generics
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
-
+from datetime import datetime, timedelta, time, date
 # Create your views here.
 
 # class DoctorRegistrationView(viewsets.ModelViewSet):
@@ -262,11 +262,13 @@ class TodayBookingsAPIView(APIView):
 
         today = date.today()
 
-        # ⛔ EXCLUDE completed appointments
+        # EXCLUDE completed and cancelled appointments
         appointments = Appointment.objects.filter(
             doctor=doctor,
             date=today,
             diagnosis_and_verdict__isnull=True
+        ).exclude(
+            status__in=['completed', 'cancelled']
         ).select_related('pet', 'slot')
 
         data = []
@@ -358,6 +360,10 @@ class CompleteAppointmentAPIView(APIView):
                 pet = appointment.pet
                 pet.weight = weight
                 pet.save(update_fields=['weight'])
+
+            # Change appointment status to 'completed'
+            appointment.status = 'completed'
+            appointment.save(update_fields=['status'])
 
             return Response(
                 {"success": True, "message": "Appointment completed successfully."},
@@ -519,13 +525,31 @@ class DoctorFeedbackListView(APIView):
 
         feedbacks = Feedback.objects.filter(appointment__doctor_id=doctor_id).order_by('-created_at')
 
-        serializer = FeedbackSerializer(feedbacks, many=True)
+        # Custom response data with user name
+        feedback_data = []
+        for feedback in feedbacks:
+            # Get user name from pet owner
+            user_name = None
+            if feedback.appointment and feedback.appointment.pet and feedback.appointment.pet.user:
+                user_name = feedback.appointment.pet.user.username
+            elif hasattr(feedback, 'user_name') and feedback.user_name:
+                # Fallback to stored user_name if available (for backward compatibility)
+                user_name = feedback.user_name
+            
+            feedback_data.append({
+                "id": feedback.id,
+                "rating": feedback.rating,
+                "feedback": feedback.feedback,
+                "created_at": feedback.created_at.strftime("%Y-%m-%d %H:%M:%S") if feedback.created_at else None,
+                "appointment": feedback.appointment.id if feedback.appointment else None,
+                "user_name": user_name  # Add user name to response
+            })
         
         return Response({
             "status": "success",
             "doctor_id": doctor_id,
             "count": feedbacks.count(),
-            "data": serializer.data
+            "data": feedback_data
         }, status=status.HTTP_200_OK)
         
         
@@ -553,3 +577,262 @@ class DoctorComplaintListView(APIView):
             "count": complaints.count(),
             "data": serializer.data
         }, status=status.HTTP_200_OK)
+    
+    
+class DoctorSlotManagementView(APIView):
+    """
+    API for doctors to manage their time slots
+    GET: View all slots with current bookings
+    PATCH: Update slot availability (cancel slot)
+    """
+    
+    def get(self, request):
+        """Get all slots for a doctor with booking information"""
+        doctor_id = request.query_params.get('doctor_id')
+        date = request.query_params.get('date')  # Optional: filter by specific date
+        
+        if not doctor_id:
+            return Response({
+                "status": "error",
+                "message": "doctor_id is required as a query parameter."
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            doctor = Doctor.objects.get(id=doctor_id)
+        except Doctor.DoesNotExist:
+            return Response({
+                "status": "error",
+                "message": "Doctor not found."
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        # Get all slots for this doctor
+        slots = TimeSlot.objects.filter(doctor=doctor).order_by('start_time')
+        
+        slot_data = []
+        for slot in slots:
+            # Get appointments for this slot (filter by date if provided)
+            appointments_query = Appointment.objects.filter(
+                doctor=doctor,
+                slot=slot
+            ).exclude(status='cancelled')
+            
+            if date:
+                try:
+                    appointment_date = datetime.strptime(date, "%Y-%m-%d").date()
+                    appointments_query = appointments_query.filter(date=appointment_date)
+                except ValueError:
+                    return Response({
+                        "status": "error",
+                        "message": "Invalid date format. Use YYYY-MM-DD."
+                    }, status=status.HTTP_400_BAD_REQUEST)
+            
+            appointments = appointments_query.select_related('pet', 'pet__user')
+            booked_count = appointments.count()
+            
+            slot_data.append({
+                "slot_id": slot.id,
+                "start_time": slot.start_time.strftime("%H:%M"),
+                "end_time": slot.end_time.strftime("%H:%M"),
+                "is_available": slot.is_available,
+                "booked_count": booked_count,
+                "appointments": [
+                    {
+                        "appointment_id": app.id,
+                        "pet_name": app.pet.name,
+                        "user_name": app.pet.user.username if app.pet and app.pet.user else None,
+                        "user_email": app.pet.user.email if app.pet and app.pet.user else None,
+                        "appointment_type": app.appointment_type,
+                        "status": app.status,
+                        "date": str(app.date)
+                    }
+                    for app in appointments
+                ]
+            })
+        
+        return Response({
+            "status": "success",
+            "doctor_id": doctor_id,
+            "doctor_name": doctor.full_name,
+            "date_filter": date,
+            "total_slots": len(slot_data),
+            "slots": slot_data
+        }, status=status.HTTP_200_OK)
+    
+        
+    def patch(self, request):
+        """Doctor cancels slots - marks them as unavailable and cancels existing appointments"""
+        doctor_id = request.data.get('doctor_id')
+        slot_ids = request.data.get('slot_ids')  # Now accepts array of slot IDs
+        slot_id = request.data.get('slot_id')  # Backward compatibility for single slot
+        date = request.data.get('date')  # Optional: specific date for cancellation
+        cancel_reason = request.data.get('reason', 'Doctor unavailable')
+        
+        # Handle both single slot_id and multiple slot_ids
+        if slot_ids:
+            if not isinstance(slot_ids, list):
+                return Response({
+                    "status": "error",
+                    "message": "slot_ids must be an array/list."
+                }, status=status.HTTP_400_BAD_REQUEST)
+            slots_to_cancel = slot_ids
+        elif slot_id:
+            slots_to_cancel = [slot_id]
+        else:
+            return Response({
+                "status": "error",
+                "message": "Either slot_id or slot_ids is required."
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        if not doctor_id:
+            return Response({
+                "status": "error",
+                "message": "doctor_id is required."
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            doctor = Doctor.objects.get(id=doctor_id)
+        except Doctor.DoesNotExist:
+            return Response({
+                "status": "error",
+                "message": "Doctor not found."
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        # Initialize results tracking
+        cancelled_slots = []
+        total_appointments_cancelled = 0
+        slot_errors = []
+        
+        # Process each slot
+        for current_slot_id in slots_to_cancel:
+            try:
+                slot = TimeSlot.objects.get(id=current_slot_id, doctor=doctor)
+                
+                # Mark slot as unavailable
+                slot.is_available = False
+                slot.save()
+                print(f"DEBUG: Slot {current_slot_id} availability set to: {slot.is_available}")
+                
+                # Find appointments to cancel for this slot
+                appointments_query = Appointment.objects.filter(
+                    doctor=doctor,
+                    slot=slot,
+                    status__in=['booked', 'payment_completed']  # Only cancel active appointments
+                )
+                
+                if date:
+                    try:
+                        appointment_date = datetime.strptime(date, "%Y-%m-%d").date()
+                        appointments_query = appointments_query.filter(date=appointment_date)
+                    except ValueError:
+                        return Response({
+                            "status": "error",
+                            "message": "Invalid date format. Use YYYY-MM-DD."
+                        }, status=status.HTTP_400_BAD_REQUEST)
+                
+                appointments = appointments_query.select_related('pet', 'pet__user')
+                slot_cancelled_count = 0
+                
+                # Cancel each appointment for this slot
+                for appointment in appointments:
+                    appointment.status = 'cancelled'
+                    appointment.notes = f"Doctor cancelled: {cancel_reason}"
+                    appointment.save()
+                    slot_cancelled_count += 1
+                    
+                    # Send email notification to user
+                    if appointment.pet and appointment.pet.user and appointment.pet.user.email:
+                        try:
+                            self.send_cancellation_email(appointment, cancel_reason)
+                        except Exception as e:
+                            # Log error but don't fail the cancellation process
+                            print(f"Email sending failed for appointment {appointment.id}: {str(e)}")
+                
+                # Track successful slot cancellation
+                cancelled_slots.append({
+                    "slot_id": current_slot_id,
+                    "slot_time": f"{slot.start_time.strftime('%H:%M')} - {slot.end_time.strftime('%H:%M')}",
+                    "appointments_cancelled": slot_cancelled_count
+                })
+                total_appointments_cancelled += slot_cancelled_count
+                
+            except TimeSlot.DoesNotExist:
+                slot_errors.append({
+                    "slot_id": current_slot_id,
+                    "error": "Slot not found or does not belong to this doctor."
+                })
+            except Exception as e:
+                slot_errors.append({
+                    "slot_id": current_slot_id,
+                    "error": str(e)
+                })
+        
+        # Prepare response
+        response_data = {
+            "status": "success",
+            "message": f"Cancelled {len(cancelled_slots)} slot(s). {total_appointments_cancelled} appointment(s) cancelled.",
+            "cancelled_slots": cancelled_slots,
+            "total_appointments_cancelled": total_appointments_cancelled,
+            "cancellation_reason": cancel_reason
+        }
+        
+        # Add errors if any
+        if slot_errors:
+            response_data["slot_errors"] = slot_errors
+            response_data["partial_success"] = True
+        
+        return Response(response_data, status=status.HTTP_200_OK)
+    
+        
+    def send_cancellation_email(self, appointment, cancel_reason):
+        """Send email notification to user when doctor cancels appointment"""
+        from django.core.mail import EmailMultiAlternatives
+        from django.template.loader import render_to_string
+        from django.conf import settings
+        
+        user = appointment.pet.user
+        doctor = appointment.doctor
+        
+        subject = f"⚠️ Appointment Cancelled: Your {appointment.appointment_type} appointment with Dr. {doctor.full_name}"
+        
+        context = {
+            "user": user,
+            "appointment": appointment,
+            "doctor": doctor,
+            "cancel_reason": cancel_reason,
+            "slot_time": f"{appointment.slot.start_time.strftime('%H:%M')} - {appointment.slot.end_time.strftime('%H:%M')}"
+        }
+        
+        try:
+            # Render HTML email
+            html_content = render_to_string("doctor_slot_cancelled.html", context)
+            text_content = f"""
+            Dear {user.username},
+            
+            Your appointment with Dr. {doctor.full_name} has been cancelled by the doctor.
+            
+            Appointment Details:
+            - Date: {appointment.date}
+            - Time: {appointment.slot.start_time.strftime('%H:%M')} - {appointment.slot.end_time.strftime('%H:%M')}
+            - Pet: {appointment.pet.name}
+            - Type: {appointment.appointment_type}
+            - Reason for cancellation: {cancel_reason}
+            
+            Please book another slot at your convenience.
+            
+            Best regards,
+            Pet Cure Team
+            """
+            
+            # Send email
+            email = EmailMultiAlternatives(
+                subject=subject,
+                body=text_content,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=[user.email],
+            )
+            email.attach_alternative(html_content, "text/html")
+            email.send(fail_silently=True)  # Fail silently to not interrupt the cancellation process
+            
+        except Exception as e:
+            # Log error but don't fail the whole cancellation process
+            print(f"Failed to send cancellation email for appointment {appointment.id}: {str(e)}")

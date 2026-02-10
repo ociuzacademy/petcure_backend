@@ -191,40 +191,44 @@ class Appointment(models.Model):
             # Check if status is being changed to 'cancelled'
             if old_appointment.status != 'cancelled' and self.status == 'cancelled':
                 print("DEBUG: Status changing to cancelled, checking time...")
-                # ... 
-                # Calculate time difference between now and appointment
-                from django.utils import timezone
-                import pytz
                 
-                # Get local timezone (Asia/Kolkata for India)
-                local_tz = pytz.timezone('Asia/Kolkata')
-                now_local = timezone.now().astimezone(local_tz)
-                
-                # Create appointment datetime in local timezone
-                appointment_datetime_local = local_tz.localize(datetime.combine(self.date, self.slot.start_time))
-                
-                time_difference = appointment_datetime_local - now_local
-                
-                # Check if cancelling less than 3 hours before appointment
-                if time_difference.total_seconds() < 10800:  # 3 hours in seconds
-                    raise ValidationError("Appointments can only be cancelled at least 3 hours before the scheduled time.")
+                # Skip time check if doctor is cancelling (indicated by notes containing "Doctor cancelled")
+                if not self.notes or "Doctor cancelled" not in self.notes:
+                    # Calculate time difference between now and appointment
+                    from django.utils import timezone
+                    import pytz
+                    
+                    # Get local timezone (Asia/Kolkata for India)
+                    local_tz = pytz.timezone('Asia/Kolkata')
+                    now_local = timezone.now().astimezone(local_tz)
+                    
+                    # Create appointment datetime in local timezone
+                    appointment_datetime_local = local_tz.localize(datetime.combine(self.date, self.slot.start_time))
+                    
+                    time_difference = appointment_datetime_local - now_local
+                    
+                    # Check if cancelling less than 3 hours before appointment
+                    if time_difference.total_seconds() < 10800:  # 3 hours in seconds
+                        raise ValidationError("Appointments can only be cancelled at least 3 hours before the scheduled time.")
         
         super().save(*args, **kwargs)
         
-        # Count non-cancelled appointments for this slot
-        booked_count = Appointment.objects.filter(
-            doctor=self.doctor,
-            slot=self.slot,
-            date=self.date
-        ).exclude(status='cancelled').count()
-        
-        # Update slot availability based on count (4 max per 15-minute slot)
-        if booked_count >= 4:
-            self.slot.is_available = False
-        else:
-            self.slot.is_available = True
+        # Skip slot availability update if doctor is cancelling
+        if not self.notes or "Doctor cancelled" not in self.notes:
+            # Count non-cancelled appointments for this slot
+            booked_count = Appointment.objects.filter(
+                doctor=self.doctor,
+                slot=self.slot,
+                date=self.date
+            ).exclude(status='cancelled').count()
             
-        self.slot.save(update_fields=['is_available'])
+            # Update slot availability based on count (4 max per 15-minute slot)
+            if booked_count >= 4:
+                self.slot.is_available = False
+            else:
+                self.slot.is_available = True
+                
+            self.slot.save(update_fields=['is_available'])
             
 
 from django.core.validators import MaxValueValidator, MinValueValidator

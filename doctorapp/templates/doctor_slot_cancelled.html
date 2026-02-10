@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Appointment Cancelled</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        .header {
+            background-color: #00477d;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 8px 8px 0 0;
+        }
+        .content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 0 0 8px 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .alert-box {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .details-box {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .detail-item {
+            margin-bottom: 10px;
+            display: flex;
+        }
+        .detail-label {
+            font-weight: bold;
+            min-width: 150px;
+            color: #495057;
+        }
+        .detail-value {
+            color: #212529;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #dee2e6;
+            text-align: center;
+            color: #6c757d;
+            font-size: 14px;
+        }
+        .button {
+            display: inline-block;
+            background-color: #00477d;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+        .button:hover {
+            background-color: #00365e;
+        }
+        h1, h2, h3 {
+            color: #00477d;
+        }
+        .icon {
+            font-size: 24px;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1 style="color: white; margin: 0;">⚠️ Appointment Cancelled</h1>
+        <p style="margin: 10px 0 0; opacity: 0.9;">Pet Cure - Veterinary Care</p>
+    </div>
+    
+    <div class="content">
+        <div class="alert-box">
+            <h3 style="margin-top: 0; color: #856404;">Important Notice</h3>
+            <p>Your appointment has been cancelled by the doctor due to unavailability.</p>
+        </div>
+        
+        <p>Dear <strong>{{ user.username }}</strong>,</p>
+        
+        <p>We regret to inform you that your upcoming appointment has been cancelled by the doctor. We apologize for any inconvenience this may cause.</p>
+        
+        <div class="details-box">
+            <h3 style="margin-top: 0;">Appointment Details</h3>
+            
+            <div class="detail-item">
+                <span class="detail-label">📅 Date:</span>
+                <span class="detail-value">{{ appointment.date }}</span>
+            </div>
+            
+            <div class="detail-item">
+                <span class="detail-label">🕐 Time Slot:</span>
+                <span class="detail-value">{{ slot_time }}</span>
+            </div>
+            
+            <div class="detail-item">
+                <span class="detail-label">👨‍⚕️ Doctor:</span>
+                <span class="detail-value">Dr. {{ doctor.full_name }}</span>
+            </div>
+            
+            <div class="detail-item">
+                <span class="detail-label">🐾 Pet:</span>
+                <span class="detail-value">{{ appointment.pet.name }}</span>
+            </div>
+            
+            <div class="detail-item">
+                <span class="detail-label">📋 Type:</span>
+                <span class="detail-value">{{ appointment.appointment_type|title }}</span>
+            </div>
+            
+            <div class="detail-item">
+                <span class="detail-label">📝 Cancellation Reason:</span>
+                <span class="detail-value">{{ cancel_reason }}</span>
+            </div>
+        </div>
+        
+        <h3>What to do next?</h3>
+        <p>We encourage you to book another appointment at your convenience. You can reschedule through our app or website.</p>
+        
+        <p style="text-align: center;">
+            <a href="#" class="button">Book New Appointment</a>
+        </p>
+        
+        <p>If you have any questions or need assistance, please don't hesitate to contact our support team.</p>
+        
+        <div class="footer">
+            <p>Best regards,<br>
+            <strong>Pet Cure Team</strong></p>
+            <p style="font-size: 12px; color: #868e96;">
+                This is an automated message. Please do not reply to this email.<br>
+                If you need assistance, contact: support@petcure.com
+            </p>
+        </div>
+    </div>
+</body>
+</html>
