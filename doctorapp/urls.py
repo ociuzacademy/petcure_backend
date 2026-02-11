@@ -51,4 +51,6 @@ urlpatterns = [
     path('doctor_feedbacks/', DoctorFeedbackListView.as_view(), name='doctor_feedbacks'),
     path('doctor_complaints/', DoctorComplaintListView.as_view(), name='doctor_complaints'),
     path('manage-slots/', DoctorSlotManagementView.as_view(), name='doctor_manage_slots'),
+    path('available-slots/', DoctorAvailableSlotsView.as_view(), name='doctor_available_slots'),
+    path('prescriptions/', PrescriptionAPIView.as_view(), name='doctor_prescriptions'),
 ]

@@ -1,6 +1,6 @@
 from django.shortcuts import render,redirect
-from .models import *
-from userapp.models import *
+from .models import Doctor, TimeSlot, DoctorFeedback, DoctorComplaint, Prescription
+from userapp.models import Appointment, Feedback, Complaint, Pet
 from .serializers import *
 from rest_framework.response import Response
 from rest_framework import status,viewsets,generics
@@ -330,14 +330,19 @@ class BookingDetailsAPIView(APIView):
         
 class CompleteAppointmentAPIView(APIView):
     """
-    PATCH - Complete a clinical appointment
+    PATCH - Complete a clinical appointment and create prescription
     Input:
         - booking_id (Appointment ID)
         - weight
-        - diagnosis and verdict
+        - diagnosis_and_verdict
+        - medication_name (required)
+        - dosage (required)
+        - food_timing (before/after)
+        - time_of_day (list, e.g., ["morning", "night"])
+        - days_duration
         - notes (optional)
     Output:
-        - success message
+        - success message with prescription details
     """
 
     def patch(self, request):
@@ -349,6 +354,25 @@ class CompleteAppointmentAPIView(APIView):
             )
 
         appointment = get_object_or_404(Appointment, id=booking_id)
+        
+        # Check if prescription already exists
+        if Prescription.objects.filter(appointment=appointment).exists():
+            return Response(
+                {"error": "Prescription already exists for this appointment."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Validate prescription required fields
+        medication_name = request.data.get('medication_name')
+        dosage = request.data.get('dosage')
+        
+        if not medication_name or not dosage:
+            return Response(
+                {"error": "medication_name and dosage are required for prescription"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Update appointment
         serializer = AppointmentUpdateSerializer(appointment, data=request.data, partial=True)
 
         if serializer.is_valid():
@@ -361,12 +385,33 @@ class CompleteAppointmentAPIView(APIView):
                 pet.weight = weight
                 pet.save(update_fields=['weight'])
 
+            # Create prescription
+            prescription = Prescription.objects.create(
+                appointment=appointment,
+                doctor=appointment.doctor,
+                pet=appointment.pet,
+                medication_name=medication_name,
+                dosage=dosage,
+                food_timing=request.data.get('food_timing', 'after'),
+                time_of_day=request.data.get('time_of_day', []),
+                days_duration=request.data.get('days_duration', 7),
+                notes=request.data.get('prescription_notes', '')
+            )
+
             # Change appointment status to 'completed'
             appointment.status = 'completed'
             appointment.save(update_fields=['status'])
 
+            # Serialize prescription for response
+            from .serializers import PrescriptionSerializer
+            prescription_serializer = PrescriptionSerializer(prescription)
+
             return Response(
-                {"success": True, "message": "Appointment completed successfully."},
+                {
+                    "success": True, 
+                    "message": "Appointment completed and prescription created successfully.",
+                    "prescription": prescription_serializer.data
+                },
                 status=status.HTTP_200_OK
             )
 
@@ -836,3 +881,152 @@ class DoctorSlotManagementView(APIView):
         except Exception as e:
             # Log error but don't fail the whole cancellation process
             print(f"Failed to send cancellation email for appointment {appointment.id}: {str(e)}")
+
+
+class DoctorAvailableSlotsView(APIView):
+    """
+    API for doctors to get available time slots for a specific date
+    GET: Returns all available slots for the given date
+    """
+    
+    def get(self, request):
+        """Get available slots for a doctor on a specific date"""
+        doctor_id = request.query_params.get('doctor_id')
+        date_str = request.query_params.get('date')
+        
+        if not doctor_id or not date_str:
+            return Response({
+                "status": "error",
+                "message": "doctor_id and date are required as query parameters."
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            doctor = Doctor.objects.get(id=doctor_id)
+        except Doctor.DoesNotExist:
+            return Response({
+                "status": "error",
+                "message": "Doctor not found."
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        try:
+            target_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+        except ValueError:
+            return Response({
+                "status": "error",
+                "message": "Invalid date format. Use YYYY-MM-DD."
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Check if date is in past
+        if target_date < date.today():
+            return Response({
+                "status": "error",
+                "message": "Cannot view slots for past dates."
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Get current time in local timezone
+        from django.utils import timezone
+        import pytz
+        
+        # Get current time in UTC
+        now_utc = timezone.now()
+        
+        # Convert to Asia/Kolkata timezone
+        kolkata_tz = pytz.timezone('Asia/Kolkata')
+        now_kolkata = now_utc.astimezone(kolkata_tz)
+        current_time = now_kolkata.time()
+        today_date = now_kolkata.date()
+        
+        # Get all slots for this doctor
+        slots = TimeSlot.objects.filter(doctor=doctor).order_by('start_time')
+        
+        slot_data = []
+        for slot in slots:
+            # Skip slots that have already passed for today
+            if target_date == today_date:
+                if slot.start_time <= current_time:
+                    continue  # Skip past slots for today
+            
+            # Count non-cancelled appointments for this slot on this date
+            booked_count = Appointment.objects.filter(
+                doctor=doctor,
+                slot=slot,
+                date=target_date
+            ).exclude(status='cancelled').count()
+            
+            # Check if slot is available (max 4 appointments per 15-minute slot)
+            is_available = slot.is_available and booked_count < 4
+            
+            # Determine remarks based on availability
+            if not slot.is_available:
+                remarks = "Unavailable (doctor cancelled)"
+            elif booked_count >= 4:
+                remarks = "Fully Booked"
+            else:
+                remarks = f"{4 - booked_count} seats available"
+            
+            slot_data.append({
+                "slot_id": slot.id,
+                "start_time": slot.start_time.strftime("%H:%M"),
+                "end_time": slot.end_time.strftime("%H:%M"),
+                "is_available": is_available,
+                "booked_count": booked_count,
+                "available_seats": max(0, 4 - booked_count) if is_available else 0,
+                "remarks": remarks
+            })
+        
+        return Response({
+            "status": "success",
+            "doctor_id": doctor_id,
+            "doctor_name": doctor.full_name,
+            "date": date_str,
+            "total_slots": len(slot_data),
+            "available_slots": len([s for s in slot_data if s['is_available']]),
+            "slots": slot_data
+        }, status=status.HTTP_200_OK)
+    
+
+
+class PrescriptionAPIView(APIView):
+    """
+    API for viewing prescriptions
+    GET: View prescriptions for appointments
+    POST: Removed - Prescription creation is now handled in CompleteAppointmentAPIView
+    """
+    
+    def get(self, request):
+        """Get prescriptions for a doctor or specific appointment"""
+        doctor_id = request.query_params.get('doctor_id')
+        appointment_id = request.query_params.get('appointment_id')
+        
+        if not doctor_id:
+            return Response({
+                "status": "error",
+                "message": "doctor_id is required as a query parameter."
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            doctor = Doctor.objects.get(id=doctor_id)
+        except Doctor.DoesNotExist:
+            return Response({
+                "status": "error",
+                "message": "Doctor not found."
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        # Start with all prescriptions for this doctor
+        prescriptions = Prescription.objects.filter(doctor=doctor)
+        
+        # Filter by appointment if provided
+        if appointment_id:
+            prescriptions = prescriptions.filter(appointment_id=appointment_id)
+        
+        # Order by latest first
+        prescriptions = prescriptions.order_by('-issued_date')
+        
+        serializer = PrescriptionSerializer(prescriptions, many=True)
+        
+        return Response({
+            "status": "success",
+            "doctor_id": doctor_id,
+            "count": prescriptions.count(),
+            "prescriptions": serializer.data
+        }, status=status.HTTP_200_OK)

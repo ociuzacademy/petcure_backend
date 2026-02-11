@@ -1,6 +1,7 @@
 from .models import *
 from userapp.models import *
 from rest_framework import serializers
+from rest_framework.fields import JSONField
 
 
 class DoctorSerializer(serializers.ModelSerializer):
@@ -208,3 +209,48 @@ class ComplaintSerializer(serializers.ModelSerializer):
     class Meta:
         model = Complaint
         fields = '__all__'  
+
+
+class PrescriptionSerializer(serializers.ModelSerializer):
+    doctor_name = serializers.CharField(source='doctor.full_name', read_only=True)
+    pet_name = serializers.CharField(source='pet.name', read_only=True)
+    appointment_date = serializers.DateField(source='appointment.date', read_only=True)
+    appointment_type = serializers.CharField(source='appointment.appointment_type', read_only=True)
+    diagnosis = serializers.CharField(source='appointment.diagnosis_and_verdict', read_only=True)
+    time_of_day = serializers.SerializerMethodField()
+    
+    def get_time_of_day(self, obj):
+        if isinstance(obj.time_of_day, str):
+            import json
+            try:
+                return json.loads(obj.time_of_day)
+            except:
+                # If it's a malformed string, try to fix common issues
+                if obj.time_of_day.startswith('["') and obj.time_of_day.endswith('"]'):
+                    return json.loads(obj.time_of_day)
+                # Return as list with single item if it's a simple string
+                return [obj.time_of_day.strip('["]')]
+        return obj.time_of_day  # Already a list/dict
+    
+    class Meta:
+        model = Prescription
+        fields = [
+            'id',
+            'appointment',
+            'doctor',
+            'doctor_name',
+            'pet',
+            'pet_name',
+            'diagnosis',
+            'medication_name',
+            'dosage',
+            'food_timing',
+            'time_of_day',
+            'days_duration',
+            'issued_date',
+            'is_active',
+            'notes',
+            'appointment_date',
+            'appointment_type'
+        ]
+        read_only_fields = ['id', 'issued_date', 'diagnosis']

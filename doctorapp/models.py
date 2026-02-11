@@ -111,3 +111,40 @@ class DoctorComplaint(models.Model):
     
     def __str__(self):
         return f"Complaint against {self.doctor.full_name} by {self.user_name} - {self.status}"
+    
+
+class Prescription(models.Model):
+    """Prescription table for completed appointments"""
+    appointment = models.ForeignKey('userapp.Appointment', on_delete=models.CASCADE, related_name='prescriptions')
+    doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, related_name='prescriptions')
+    pet = models.ForeignKey('userapp.Pet', on_delete=models.CASCADE, related_name='prescriptions')
+    
+    
+    # Prescription details - only medication specifics
+    medication_name = models.CharField(max_length=200, help_text="Name of medication", default="Not specified")
+    dosage = models.CharField(max_length=100, help_text="e.g., 500mg, 5ml, 1 tablet", default="As prescribed")
+    
+    # Medication timing
+    FOOD_TIMING_CHOICES = [
+        ('before', 'Before Food'),
+        ('after', 'After Food'),
+    ]
+    food_timing = models.CharField(max_length=10, choices=FOOD_TIMING_CHOICES, default='after')
+    
+    TIME_OF_DAY_CHOICES = [
+        ('morning', 'Morning'),
+        ('noon', 'Noon'),
+        ('evening', 'Evening'),
+        ('night', 'Night'),
+    ]
+    time_of_day = models.JSONField(default=list, help_text="List of times, e.g., ['morning', 'night']")
+    
+    days_duration = models.PositiveIntegerField(help_text="For how many days", default=7)
+    
+    # Prescription metadata
+    issued_date = models.DateTimeField(auto_now_add=True)
+    is_active = models.BooleanField(default=True)
+    notes = models.TextField(blank=True, null=True)
+    
+    def __str__(self):
+        return f"Prescription #{self.id} for {self.pet.name} - Dr. {self.doctor.full_name}"
