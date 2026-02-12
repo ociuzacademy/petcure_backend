@@ -308,6 +308,10 @@ class AppointmentSerializer(serializers.ModelSerializer): #Used for creating/val
         if slot.doctor != doctor:
             raise serializers.ValidationError("Selected slot does not belong to this doctor.")
 
+        # Check if slot has been cancelled by doctor
+        if not slot.is_available:
+            raise serializers.ValidationError("This slot has been cancelled by the doctor and is not available for booking.")
+        
         # 👉 Allow max 4 appointments for the same doctor-slot-date (15-minute slots)
         existing = Appointment.objects.filter(
             doctor=doctor,

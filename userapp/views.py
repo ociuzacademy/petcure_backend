@@ -1279,6 +1279,15 @@ class NearbyDoctorsView(APIView):
         nearby_doctors = []
 
         for doctor in Doctor.objects.filter(is_approved=True):
+            # Check if doctor has at least one available slot
+            has_available_slots = TimeSlot.objects.filter(
+                doctor=doctor,
+                is_available=True
+            ).exists()
+            
+            if not has_available_slots:
+                continue  # Skip doctors with no available slots
+                
             distance = self.calculate_distance(
                 user_lat, user_lon,
                 float(doctor.latitude), float(doctor.longitude)
@@ -1293,10 +1302,10 @@ class NearbyDoctorsView(APIView):
                     "address": doctor.address,
                     "latitude": float(doctor.latitude),
                     "longitude": float(doctor.longitude),
-                    # ✅ media-relative path
                     "image": f"media/{doctor.image.name}" if doctor.image else None,
                     "id_card": f"media/{doctor.id_card.name}" if doctor.id_card else None,
                     "distance_km": round(distance, 2),
+                    "has_available_slots": True
                 })
 
         # Sort doctors by distance
@@ -1316,8 +1325,9 @@ class NearbyDoctorsView(APIView):
     
 class DoctorSlotListView(APIView):
     """
-    GET /doctor/slots/?doctor_id=<id>&date=YYYY-MM-DD
+    GET /user/view_slots/?doctor_id=<id>&date=YYYY-MM-DD
     Returns all slots for the doctor with availability for that date.
+    Checks both booking count and doctor-cancelled slots.
     """
 
     def get(self, request):
@@ -1365,10 +1375,13 @@ class DoctorSlotListView(APIView):
         current_time = now_kolkata.time()
         today_date = now_kolkata.date()
         
-        # ✅ 6. Fetch slots
+        # ✅ 6. Import CancelledSlot model from doctorapp
+        from doctorapp.models import CancelledSlot
+        
+        # ✅ 7. Fetch slots
         slots = TimeSlot.objects.filter(doctor=doctor).order_by('start_time')
 
-        # ✅ 7. Build slot data with availability
+        # ✅ 8. Build slot data with availability
         data = []
         for slot in slots:
             # Skip slots that have already passed for today
@@ -1376,26 +1389,44 @@ class DoctorSlotListView(APIView):
                 if slot.start_time <= current_time:
                     continue  # Skip past slots for today
             
-            # Count non-cancelled appointments for this slot
+            # Check if this slot is cancelled by doctor for this specific date
+            is_cancelled_by_doctor = CancelledSlot.objects.filter(
+                doctor=doctor,
+                slot=slot,
+                date=appointment_date
+            ).exists()
+            
+            print(f"DEBUG - User View - Doctor: {doctor.id}, Slot: {slot.id}, Date: {appointment_date}, Cancelled: {is_cancelled_by_doctor}")
+            
+            # Count non-cancelled appointments for this slot on this date
             booked_count = Appointment.objects.filter(
                 doctor=doctor,
                 slot=slot,
                 date=appointment_date
             ).exclude(status='cancelled').count()
             
-            # Check if slot is fully booked (max 6)
-            is_available = booked_count < 6
+            # Check if slot is available:
+            # 1. Must NOT be cancelled by doctor
+            # 2. Must have less than 4 bookings (max 4 per 15-min slot)
+            if is_cancelled_by_doctor:
+                is_available = False
+                remarks = "Unavailable (Doctor cancelled this slot for this date)"
+            else:
+                is_available = booked_count < 4
+                remarks = "Fully Booked" if not is_available else f"Available ({4 - booked_count} seats left)"
             
             data.append({
                 "slot_id": slot.id,
                 "start_time": slot.start_time.strftime("%H:%M"),
                 "end_time": slot.end_time.strftime("%H:%M"),
                 "availability": is_available,
-                "remarks": "Fully Booked" if not is_available else f"Available ({6 - booked_count} seats left)"
+                "booked_count": booked_count,
+                "cancelled_by_doctor": is_cancelled_by_doctor,
+                "remarks": remarks
             })
 
         return Response({
-            "doctor": getattr(doctor, "full_name", doctor.full_name),  # support both field names
+            "doctor": doctor.full_name,
             "date": requested_date,
             "slots": data
         }, status=status.HTTP_200_OK)
@@ -1417,6 +1448,45 @@ class AppointmentBookingView(APIView):
                 "error": "vaccine_id is required when reason is 'Vaccine'",
                 "message": "Please select a vaccine from the vaccine list"
             }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Check if slot is available (not cancelled by doctor for this date)
+        slot_id = request.data.get('slot')
+        doctor_id = request.data.get('doctor')
+        appointment_date = request.data.get('date')
+        
+        if slot_id and doctor_id and appointment_date:
+            try:
+                # Parse date
+                from datetime import datetime
+                booking_date = datetime.strptime(appointment_date, "%Y-%m-%d").date()
+                
+                # Check if slot exists
+                slot = TimeSlot.objects.get(id=slot_id, doctor_id=doctor_id)
+                
+                # Check if this slot is cancelled by doctor for this specific date
+                from doctorapp.models import CancelledSlot
+                is_cancelled = CancelledSlot.objects.filter(
+                    doctor_id=doctor_id,
+                    slot_id=slot_id,
+                    date=booking_date
+                ).exists()
+                
+                if is_cancelled:
+                    return Response(
+                        {"error": "This slot has been cancelled by the doctor for this date and is not available for booking."},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                    
+            except ValueError:
+                return Response(
+                    {"error": "Invalid date format. Use YYYY-MM-DD."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            except TimeSlot.DoesNotExist:
+                return Response(
+                    {"error": "Invalid slot or doctor combination."},
+                    status=status.HTTP_404_NOT_FOUND
+                )
         
         serializer = AppointmentSerializer(data=request.data)
         if serializer.is_valid():

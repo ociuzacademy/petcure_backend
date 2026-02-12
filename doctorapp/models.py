@@ -75,6 +75,23 @@ class TimeSlot(models.Model):
     is_available = models.BooleanField(default=True)
     def __str__(self):
         return f"{self.start_time.strftime('%H:%M')} - {self.end_time.strftime('%H:%M')} ({self.doctor.full_name})"
+
+
+class CancelledSlot(models.Model):
+    """
+    Tracks slots cancelled by doctor for specific dates
+    """
+    doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, related_name='cancelled_slots')
+    slot = models.ForeignKey(TimeSlot, on_delete=models.CASCADE, related_name='cancelled_dates')
+    date = models.DateField()
+    cancelled_at = models.DateTimeField(auto_now_add=True)
+    reason = models.TextField(blank=True, null=True)
+    
+    class Meta:
+        unique_together = ('doctor', 'slot', 'date')  # Prevent duplicate cancellation records
+    
+    def __str__(self):
+        return f"{self.doctor.full_name} - {self.slot} cancelled on {self.date}"
     
 class DoctorFeedback(models.Model):
     RATING_CHOICES = [
@@ -120,24 +137,8 @@ class Prescription(models.Model):
     pet = models.ForeignKey('userapp.Pet', on_delete=models.CASCADE, related_name='prescriptions')
     
     
-    # Prescription details - only medication specifics
-    medication_name = models.CharField(max_length=200, help_text="Name of medication", default="Not specified")
-    dosage = models.CharField(max_length=100, help_text="e.g., 500mg, 5ml, 1 tablet", default="As prescribed")
-    
-    # Medication timing
-    FOOD_TIMING_CHOICES = [
-        ('before', 'Before Food'),
-        ('after', 'After Food'),
-    ]
-    food_timing = models.CharField(max_length=10, choices=FOOD_TIMING_CHOICES, default='after')
-    
-    TIME_OF_DAY_CHOICES = [
-        ('morning', 'Morning'),
-        ('noon', 'Noon'),
-        ('evening', 'Evening'),
-        ('night', 'Night'),
-    ]
-    time_of_day = models.JSONField(default=list, help_text="List of times, e.g., ['morning', 'night']")
+    # Prescription details - multiple medications supported
+    medications = models.JSONField(default=list, help_text="List of medications, each with name, dosage, food_timing, time_of_day")
     
     days_duration = models.PositiveIntegerField(help_text="For how many days", default=7)
     
