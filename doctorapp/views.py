@@ -388,11 +388,20 @@ class CompleteAppointmentAPIView(APIView):
                     {"error": f"Medication #{idx+1}: food_timing must be 'before' or 'after'"},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            if med.get('time_of_day') and not isinstance(med.get('time_of_day'), list):
-                return Response(
-                    {"error": f"Medication #{idx+1}: time_of_day must be a list"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+            if med.get('time_of_day'):
+                if not isinstance(med.get('time_of_day'), list):
+                    return Response(
+                        {"error": f"Medication #{idx+1}: time_of_day must be a list"},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                # Validate each time value is from allowed choices
+                from .constants import VALID_TIME_OF_DAY_VALUES
+                for time_val in med.get('time_of_day'):
+                    if time_val not in VALID_TIME_OF_DAY_VALUES:
+                        return Response(
+                            {"error": f"Medication #{idx+1}: '{time_val}' is not a valid time. Allowed values: {', '.join(VALID_TIME_OF_DAY_VALUES)}"},
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
 
         # Update appointment
         serializer = AppointmentUpdateSerializer(appointment, data=request.data, partial=True)

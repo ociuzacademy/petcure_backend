@@ -137,6 +137,9 @@ class Prescription(models.Model):
     pet = models.ForeignKey('userapp.Pet', on_delete=models.CASCADE, related_name='prescriptions')
     
     
+    # Import time of day choices from constants
+    from .constants import TIME_OF_DAY_CHOICES
+    
     # Prescription details - multiple medications supported
     medications = models.JSONField(default=list, help_text="List of medications, each with name, dosage, food_timing, time_of_day")
     

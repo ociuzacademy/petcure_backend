@@ -219,6 +219,15 @@ class PrescriptionSerializer(serializers.ModelSerializer):
     diagnosis = serializers.CharField(source='appointment.diagnosis_and_verdict', read_only=True)
     medications = serializers.JSONField()
     
+    # Import time of day choices from constants
+    from .constants import TIME_OF_DAY_CHOICES as TIME_CHOICES
+    
+    # Format for API documentation
+    TIME_OF_DAY_CHOICES = [
+        {'value': value, 'label': label}
+        for value, label in TIME_CHOICES
+    ]
+    
     class Meta:
         model = Prescription
         fields = [
