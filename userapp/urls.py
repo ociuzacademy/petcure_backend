@@ -84,4 +84,6 @@ urlpatterns = [
     path('view_complaints/', UserComplaintListView.as_view(), name='user_view_complaints'),
     path('vaccines/', VaccineListView.as_view(), name='vaccine_list'),
     path('next_vaccine/', NextVaccineRecommendationView.as_view(), name='next_vaccine'),
+    path('prescriptions/', UserPrescriptionListView.as_view(), name='user_prescriptions'),
+    path('prescription-view/', UserPrescriptionDetailView.as_view(), name='user_prescription_view'),
 ]

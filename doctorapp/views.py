@@ -1109,3 +1109,92 @@ class PrescriptionAPIView(APIView):
             "count": prescriptions.count(),
             "prescriptions": serializer.data
         }, status=status.HTTP_200_OK)
+    
+class PrescriptionDetailView(APIView):
+    """
+    API for doctors to view a specific prescription by ID
+    GET: /doctor/prescription-view/?prescription_id=<id>&doctor_id=<id>
+    Returns detailed prescription information
+    """
+    
+    def get(self, request):
+        """Get detailed prescription by ID"""
+        prescription_id = request.query_params.get('prescription_id')
+        doctor_id = request.query_params.get('doctor_id')
+        
+        # Validate required parameters
+        if not prescription_id:
+            return Response({
+                "status": "error",
+                "message": "prescription_id is required as a query parameter."
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        if not doctor_id:
+            return Response({
+                "status": "error",
+                "message": "doctor_id is required as a query parameter."
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            # Verify doctor exists
+            doctor = Doctor.objects.get(id=doctor_id)
+            
+            # Get prescription and verify it belongs to this doctor
+            prescription = Prescription.objects.get(
+                id=prescription_id,
+                doctor=doctor
+            )
+            
+        except Doctor.DoesNotExist:
+            return Response({
+                "status": "error",
+                "message": "Doctor not found."
+            }, status=status.HTTP_404_NOT_FOUND)
+            
+        except Prescription.DoesNotExist:
+            return Response({
+                "status": "error",
+                "message": "Prescription not found or does not belong to this doctor."
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        # Serialize prescription data
+        serializer = PrescriptionSerializer(prescription)
+        
+        # Get additional appointment and pet details
+        appointment = prescription.appointment
+        pet = prescription.pet
+        
+        # Build detailed response
+        response_data = serializer.data
+        response_data.update({
+            "appointment_details": {
+                "date": appointment.date,
+                "slot": f"{appointment.slot.start_time.strftime('%H:%M')} - {appointment.slot.end_time.strftime('%H:%M')}" if appointment.slot else None,
+                "type": appointment.appointment_type,
+                "reason": appointment.reason,
+                "symptoms": appointment.symptoms,
+                "status": appointment.status
+            },
+            "pet_details": {
+                "id": pet.id,
+                "name": pet.name,
+                "category": pet.category.petcategory if pet.category else None,
+                "sub_category": pet.sub_category.petsubcategory if pet.sub_category else None,
+                "gender": pet.gender,
+                "age": pet.get_age(),
+                "weight": pet.weight,
+                "image": pet.pet_image.url if pet.pet_image else None
+            },
+            "doctor_details": {
+                "id": doctor.id,
+                "name": doctor.full_name,
+                "email": doctor.email,
+                "phone": doctor.phone_number
+            }
+        })
+        
+        return Response({
+            "status": "success",
+            "message": "Prescription details fetched successfully.",
+            "prescription": response_data
+        }, status=status.HTTP_200_OK)

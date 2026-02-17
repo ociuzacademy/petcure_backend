@@ -16,6 +16,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path,include
+from django.conf.urls import handler404
 from django.conf.urls.static import static
 from django.conf import settings
 
@@ -26,6 +27,20 @@ urlpatterns = [
     path('doctor/',include('doctorapp.urls')),
     path('delivery/',include('deliveryapp.urls')),
 ]
+
+# Serve static files in development
+if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATICFILES_DIRS[0])
+else:
+    # Even in production-like mode, we need static files for 404 page
+    from django.views.static import serve
+    from django.urls import re_path
+    urlpatterns += [
+        re_path(r'^static/(?P<path>.*)$', serve, {'document_root': settings.STATICFILES_DIRS[0]}),
+    ]
+
+# Custom error handlers
+handler404 = 'petcure.views.custom_404'
 
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL,

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - Page Not Found</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+                body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a2e35; /* Dark teal - project theme color */
+            min-height: 100vh;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        
+        html {
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        .error-container {
+            max-width: 800px;
+            width: 90%;
+            text-align: center;
+            background-color: white;
+            border-radius: 20px;
+            padding: 30px 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            max-height: 95vh;
+            overflow-y: auto;
+            margin: 10px auto;
+        }
+        
+        .error-image {
+            max-width: 100%;
+            height: auto;
+            margin-bottom: 20px;
+            max-height: 60vh;
+            object-fit: contain;
+        }
+        
+        .error-image {
+            max-width: 100%;
+            height: auto;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            font-size: 120px;
+            margin: 0;
+            color: #1a2e35;
+            line-height: 1;
+            font-weight: 700;
+        }
+        
+        h2 {
+            font-size: 32px;
+            color: #2a4a55;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+        
+        p {
+            font-size: 18px;
+            color: #555;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        
+        .home-button {
+            display: inline-block;
+            padding: 15px 40px;
+            background-color: #1a2e35;
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .home-button:hover {
+            background-color: #2a4a55;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(26, 46, 53, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <img src="/static/404.png" alt="404 Error" class="error-image">
+        <p>Oops! Looks like the server lost its way.<br>Let's get you back on track.</p>
+        <a href="/" class="home-button">Go to Homepage</a>
+    </div>
+</body>
+</html>

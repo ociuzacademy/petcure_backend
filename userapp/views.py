@@ -10,6 +10,7 @@ from decimal import Decimal
 from datetime import datetime, timedelta
 from django.utils import timezone
 from math import radians, sin, cos, sqrt, atan2
+from doctorapp.models import Prescription
 
 
 # Create your views here.
@@ -2273,3 +2274,165 @@ class NextVaccineRecommendationView(APIView):
             }
         
         return Response(response_data, status=status.HTTP_200_OK)
+
+class UserPrescriptionListView(APIView):
+    """
+    API for users to view all prescriptions for their pets
+    GET: /user/prescriptions/?user_id=<id>
+    Returns all prescriptions across all pets of the user
+    """
+    
+    def get(self, request):
+        user_id = request.query_params.get('user_id')
+        
+        if not user_id:
+            return Response({
+                "status": "error",
+                "message": "user_id is required as a query parameter."
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response({
+                "status": "error",
+                "message": "User not found."
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        # Get all pets for this user
+        pets = Pet.objects.filter(user=user)
+        pet_ids = pets.values_list('id', flat=True)
+        
+        # Get all prescriptions for these pets
+        from doctorapp.models import Prescription
+        prescriptions = Prescription.objects.filter(
+            pet_id__in=pet_ids
+        ).select_related('doctor', 'pet', 'appointment').order_by('-issued_date')
+        
+        # Format response data
+        prescription_list = []
+        for prescription in prescriptions:
+            prescription_list.append({
+                "id": prescription.id,
+                "appointment_id": prescription.appointment.id,
+                "appointment_date": prescription.appointment.date,
+                "doctor_id": prescription.doctor.id,
+                "doctor_name": prescription.doctor.full_name,
+                "pet_id": prescription.pet.id,
+                "pet_name": prescription.pet.name,
+                "diagnosis": prescription.appointment.diagnosis_and_verdict,
+                "medications": prescription.medications,
+                "days_duration": prescription.days_duration,
+                "issued_date": prescription.issued_date,
+                "is_active": prescription.is_active,
+                "notes": prescription.notes
+            })
+        
+        return Response({
+            "status": "success",
+            "user_id": user_id,
+            "count": len(prescription_list),
+            "prescriptions": prescription_list
+        }, status=status.HTTP_200_OK)
+
+
+class UserPrescriptionDetailView(APIView):
+    """
+    API for users to view detailed prescription information
+    GET: /user/prescription-view/?prescription_id=<id>&user_id=<id>
+    Returns complete prescription details with appointment, doctor, and pet information
+    """
+    
+    def get(self, request):
+        prescription_id = request.query_params.get('prescription_id')
+        user_id = request.query_params.get('user_id')
+        
+        # Validate required parameters
+        if not prescription_id:
+            return Response({
+                "status": "error",
+                "message": "prescription_id is required as a query parameter."
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        if not user_id:
+            return Response({
+                "status": "error",
+                "message": "user_id is required as a query parameter."
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            # Verify user exists
+            user = User.objects.get(id=user_id)
+            
+            # Get prescription and verify it belongs to user's pet
+            from doctorapp.models import Prescription
+            prescription = Prescription.objects.get(id=prescription_id)
+            
+            # Check if this prescription's pet belongs to the user
+            if prescription.pet.user.id != int(user_id):
+                return Response({
+                    "status": "error",
+                    "message": "This prescription does not belong to any of your pets."
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+        except User.DoesNotExist:
+            return Response({
+                "status": "error",
+                "message": "User not found."
+            }, status=status.HTTP_404_NOT_FOUND)
+            
+        except Prescription.DoesNotExist:
+            return Response({
+                "status": "error",
+                "message": "Prescription not found."
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        # Get related data
+        appointment = prescription.appointment
+        doctor = prescription.doctor
+        pet = prescription.pet
+        
+        # Build detailed response
+        response_data = {
+            "id": prescription.id,
+            "appointment_id": appointment.id,
+            "issued_date": prescription.issued_date,
+            "is_active": prescription.is_active,
+            "diagnosis": appointment.diagnosis_and_verdict,
+            "medications": prescription.medications,
+            "days_duration": prescription.days_duration,
+            "notes": prescription.notes,
+            "appointment_details": {
+                "date": appointment.date,
+                "slot": f"{appointment.slot.start_time.strftime('%H:%M')} - {appointment.slot.end_time.strftime('%H:%M')}" if appointment.slot else None,
+                "type": appointment.appointment_type,
+                "reason": appointment.reason,
+                "symptoms": appointment.symptoms,
+                "status": appointment.status
+            },
+            "doctor_details": {
+                "id": doctor.id,
+                "name": doctor.full_name,
+                "email": doctor.email,
+                "phone": doctor.phone_number,
+                "address": doctor.address,
+                "image": doctor.image.url if doctor.image else None
+            },
+            "pet_details": {
+                "id": pet.id,
+                "name": pet.name,
+                "category": pet.category.petcategory if pet.category else None,
+                "sub_category": pet.sub_category.petsubcategory if pet.sub_category else None,
+                "gender": pet.gender,
+                "age": pet.get_age(),
+                "weight": pet.weight,
+                "image": pet.pet_image.url if pet.pet_image else None,
+                "health_condition": pet.health_condition
+            }
+        }
+        
+        return Response({
+            "status": "success",
+            "message": "Prescription details fetched successfully.",
+            "prescription": response_data
+        }, status=status.HTTP_200_OK)
