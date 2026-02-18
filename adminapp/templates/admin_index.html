@@ -31,10 +31,32 @@
             color: #fff;
             transition: all 0.3s;
             min-height: 100vh;
+            position: relative;
+            z-index: 1000;
         }
 
         #sidebar.active {
             margin-left: -250px;
+        }
+        
+        @media (max-width: 768px) {
+            #sidebar {
+                margin-left: -250px;
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100%;
+                box-shadow: 2px 0 10px rgba(0,0,0,0.3);
+            }
+            
+            #sidebar.active {
+                margin-left: 0;
+            }
+            
+            #content {
+                width: 100%;
+                margin-left: 0;
+            }
         }
 
         #sidebar .sidebar-header {
@@ -83,9 +105,19 @@
             padding: 20px;
             min-height: 100vh;
             transition: all 0.3s;
+            overflow-x: hidden;
+        }
+        
+        .container-fluid {
+            padding-left: 15px;
+            padding-right: 15px;
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
         }
 
         /* Navbar Styles */
+
         .navbar {
             padding: 15px 10px;
             background: #00477d;
@@ -93,6 +125,38 @@
             border-radius: 0;
             margin-bottom: 40px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .container-fluid {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            padding-right: 15px;
+            padding-left: 15px;
+            margin-right: auto;
+            margin-left: auto;
+        }
+        
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 10px 5px;
+            }
+            
+            .container-fluid {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .button-container {
+                margin-top: 5px;
+                justify-content: center;
+            }
         }
 
         .navbar-btn {
@@ -109,7 +173,8 @@
 
         /* Custom Card Styles */
         .card {
-            width: 350px;
+            width: 100%;
+            max-width: 350px;
             height: 150px;
             background: rgb(226, 237, 250);
             display: flex;
@@ -123,7 +188,22 @@
             position: relative;
             transition: all 0.7s ease-in-out;
             overflow: hidden;
-            margin: 10px;
+            margin: 10px auto;
+        }
+        
+        @media (max-width: 768px) {
+            .card {
+                font-size: 1.2em;
+                height: 120px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .card {
+                font-size: 1em;
+                height: 100px;
+                max-width: 280px;
+            }
         }
 
         .card::before {
@@ -510,8 +590,8 @@
             <!-- Main Content -->
             <div class="container-fluid" style="color: white;">
                 <h2>Welcome to Admin Dashboard</h2>
-                <div class="row">
-                    <!-- <div class="col-md-4">
+                <div class="row g-3" style="display: flex; flex-wrap: wrap; justify-content: center;">
+                    <!--                <div class="col-sm-6 col-md-4 col-lg-3">
                         <a href="" style="text-decoration: none;">
                             <div class="card">
                                 <p class="c-txt">Add Service</p>
@@ -519,7 +599,7 @@
                         </a>
                     </div> -->
                     <!-- Add Vaccine Card -->
-                    <div class="col-md-4">
+                    <div class="col-sm-6 col-md-4 col-lg-3">
                         <a href="{% url 'add_vaccine' %}" style="text-decoration: none;">
                             <div class="card">
                                 <p class="c-txt">Add Vaccine</p>
@@ -528,77 +608,77 @@
                     </div>
 
                     <!-- View Vaccines Card -->
-                    <div class="col-md-4">
+                    <div class="col-sm-6 col-md-4 col-lg-3">
                         <a href="{% url 'view_vaccines' %}" style="text-decoration: none;">
                             <div class="card">
                                 <p class="c-txt">View Vaccines</p>
                             </div>
                         </a>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-sm-6 col-md-4 col-lg-3">
                         <a href="{% url 'add_pet_category' %}" style="text-decoration: none;">
                             <div class="card">
                                 <p class="c-txt">Pet Category</p>
                             </div>
                         </a>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-sm-6 col-md-4 col-lg-3">
                         <a href="{% url 'add_product_category' %}" style="text-decoration: none;">
                             <div class="card">
                                 <p class="c-txt">Product Categories </p>
                             </div>
                         </a>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-sm-6 col-md-4 col-lg-3">
                         <a href="{% url 'add_products' %}" style="text-decoration: none;">
                             <div class="card">
                                 <p class="c-txt"> Add Product </p>
                             </div>
                         </a>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-sm-6 col-md-4 col-lg-3">
                         <a href="{% url 'view_products' %}" style="text-decoration: none;">
                             <div class="card">
                                 <p class="c-txt"> View Product </p>
                             </div>
                         </a>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-sm-6 col-md-4 col-lg-3">
                         <a href="{% url 'pending_delivery_agents' %}" style="text-decoration: none;">
                             <div class="card">
                                 <p class="c-txt"> Manage Delivery Agents </p>
                             </div>
                         </a>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-sm-6 col-md-4 col-lg-3">
                         <a href="{% url 'approved_delivery_agents' %}" style="text-decoration: none;">
                             <div class="card">
                                 <p class="c-txt"> View Approved Delivery Agents </p>
                             </div>
                         </a>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-sm-6 col-md-4 col-lg-3">
                         <a href="{% url 'rejected_delivery_agents' %}" style="text-decoration: none;">
                             <div class="card">
                                 <p class="c-txt"> View Rejected Delivery Agents </p>
                             </div>
                         </a>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-sm-6 col-md-4 col-lg-3">
                         <a href="{% url 'pending_doctors' %}" style="text-decoration: none;">
                             <div class="card">
                                 <p class="c-txt"> Manage Doctors </p>
                             </div>
                         </a>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-sm-6 col-md-4 col-lg-3">
                         <a href="{% url 'approved_doctors' %}" style="text-decoration: none;">
                             <div class="card">
                                 <p class="c-txt"> View Approved Doctors </p>
                             </div>
                         </a>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-sm-6 col-md-4 col-lg-3">
                         <a href="{% url 'rejected_doctors' %}" style="text-decoration: none;">
                             <div class="card">
                                 <p class="c-txt"> View Rejected Doctors </p>
@@ -606,14 +686,14 @@
                         </a>
                     </div>
 
-                    <div class="col-md-4">
+                    <div class="col-sm-6 col-md-4 col-lg-3">
                         <a href="{% url 'assign_orders' %}" style="text-decoration: none;">
                             <div class="card">
                                 <p class="c-txt"> Assign Orders </p>
                             </div>
                         </a>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-sm-6 col-md-4 col-lg-3">
                         <a href="{% url 'admin_view_orders' %}" style="text-decoration: none;">
                             <div class="card">
                                 <p class="c-txt"> View Orders </p>
@@ -622,18 +702,15 @@
                     </div>
 
 
-                    <div class="col-md-4">
+                    <div class="col-sm-6 col-md-4 col-lg-3">
                         <a href="{% url 'admin_feedback_complaints' %}" style="text-decoration: none;">
                             <div class="card">
                                 <p class="c-txt"> View Feedback & Complaints </p>
                             </div>
                         </a>
                     </div>
-                    
-
-
-                </div>
-            </div>
+                </div> <!-- Close row -->
+            </div> <!-- Close container-fluid -->
             {% endblock %}
         </div>
     </div>
