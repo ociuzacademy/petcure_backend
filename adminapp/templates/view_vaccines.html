@@ -61,7 +61,7 @@
     }
     .filter-item {
         flex: 1;
-        min-width: 200px;
+        min-width: 150px;
     }
     label {
         display: block;
@@ -111,12 +111,30 @@
         border-collapse: collapse;
         margin-top: 20px;
     }
+    .vaccine-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+        table-layout: auto;
+    }
+    
     .vaccine-table th,
     .vaccine-table td {
         padding: 12px 15px;
         text-align: left;
         border-bottom: 1px solid #ddd;
+        word-break: break-word;
     }
+    
+    /* Column width allocations for better laptop screen distribution */
+    .vaccine-table th:nth-child(1) { width: 5%; }  /* ID */
+    .vaccine-table th:nth-child(2) { width: 20%; } /* Vaccine Name */
+    .vaccine-table th:nth-child(3) { width: 10%; } /* Category */
+    .vaccine-table th:nth-child(4) { width: 10%; } /* Subcategory */
+    .vaccine-table th:nth-child(5) { width: 12%; } /* Recommended Age */
+    .vaccine-table th:nth-child(6) { width: 12%; } /* Booster Required */
+    .vaccine-table th:nth-child(7) { width: 12%; } /* Annual Revaccination */
+    .vaccine-table th:nth-child(8) { width: 14%; } /* Actions */
     .vaccine-table th {
         background-color: #00477d;
         color: white;
@@ -200,6 +218,66 @@
         gap: 10px;
         margin: 10px 0;
     }
+    
+    /* Responsive styles */
+    @media (max-width: 768px) {
+        .container {
+            margin: 20px auto;
+            padding: 20px 15px;
+            width: 95%;
+        }
+        
+        .filter-group {
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .filter-item {
+            width: 100%;
+            min-width: auto;
+        }
+        
+        h2 {
+            font-size: 1.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .count-badge {
+            margin-left: 0;
+        }
+        
+        div[style*="display: flex; justify-content: space-between"] {
+            flex-direction: column;
+            gap: 15px;
+            align-items: flex-start !important;
+        }
+        
+        .filters {
+            padding: 15px;
+        }
+        
+        .filters div[style*="display: flex; gap: 10px"] {
+            flex-wrap: wrap;
+        }
+        
+        .btn, .btn-clear {
+            width: 100%;
+            text-align: center;
+        }
+    }
+    
+    @media (max-width: 480px) {
+        h2 {
+            font-size: 1.2rem;
+        }
+        
+        .container {
+            padding: 15px 10px;
+        }
+    }
 </style>
 
 <div class="container shadow-lg p-4 rounded" style="background-color: rgb(254, 254, 254);">
@@ -247,8 +325,8 @@
         </div>
     </div>
     {% if vaccines %}
-        <div class="table-responsive">
-        <table class="vaccine-table table table-striped table-bordered">
+        <div class="table-responsive" style="overflow-x: auto;">
+            <table class="vaccine-table table table-striped table-bordered" style="width: 100%;">
             <thead>
                 <tr>
                     <th>ID</th>
