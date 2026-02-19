@@ -2050,31 +2050,62 @@ class PetFoodRecommendationAPIView(APIView):
 
         # Extract numeric age from string (e.g., "3 years" -> 3)
         age_str = str(pet.get_age())
+        print(f"DEBUG - Original age string: {age_str}")
         age_years = 1  # Default if parsing fails
+        age_months = 0  # Initialize months variable
 
         try:
-            if 'year' in age_str:
-                # Extract number from "X years" string
-                import re
-                match = re.search(r'(\d+)\s*year', age_str)
-                if match:
-                    age_years = int(match.group(1))
-            elif 'month' in age_str:
-                # Convert months to years (approximate)
-                match = re.search(r'(\d+)\s*month', age_str)
-                if match:
-                    months = int(match.group(1))
-                    age_years = max(1, months // 12)  # At least 1 year if older than 6 months
-        except:
+            import re
+            
+            # Check for years first
+            year_match = re.search(r'(\d+)\s*years?', age_str)
+            if year_match:
+                age_years = int(year_match.group(1))
+                age_months = 0
+                print(f"DEBUG - Found years: {age_years}")
+            
+            # Check for months
+            elif re.search(r'month', age_str):
+                month_match = re.search(r'(\d+)\s*months?', age_str)
+                if month_match:
+                    age_months = int(month_match.group(1))
+                    age_years = 0
+                    print(f"DEBUG - Found months: {age_months}, setting age_years=0")
+            
+            # Check for weeks
+            elif re.search(r'week', age_str):
+                week_match = re.search(r'(\d+)\s*weeks?', age_str)
+                if week_match:
+                    age_years = 0
+                    age_months = 0
+                    print(f"DEBUG - Found weeks, setting age_years=0")
+            
+            # If no patterns match, keep defaults
+            else:
+                print(f"DEBUG - No age pattern matched, keeping defaults")
+                
+        except Exception as e:
             age_years = 1
+            age_months = 0
+            print(f"DEBUG - Exception caught: {e}, setting age_years=1")
+            
+        print(f"DEBUG - Final values - age_years: {age_years}, age_months: {age_months}")
         health = pet.health_condition or "Generally healthy"
 
+        # Determine age display text
+        if age_years > 0:
+            age_display = f"{age_years} years"
+        elif age_months > 0:
+            age_display = f"{age_months} months"
+        else:
+            age_display = "puppy/kitten (under 1 month)"
+        
         prompt = f"""
         You are a professional veterinary diet planner.
 
         A pet has the following details:
         - Breed: {breed}
-        - Age: {age_years} years
+        - Age: {age_display}
         - Health Condition: {health}
 
         Provide the best food recommendations including:
@@ -2087,6 +2118,7 @@ class PetFoodRecommendationAPIView(APIView):
 
         Reply in clear bullet points.
         """
+
         print(f"DEBUG - Pet Food Recommendation Request:")
         print(f"  Pet ID: {pet_id}")
         print(f"  Breed: {breed}")
