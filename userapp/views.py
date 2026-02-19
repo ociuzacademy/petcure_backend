@@ -55,10 +55,20 @@ def get_next_vaccine_for_pet(pet):
     
     today = date.today()
     
-    # Get all vaccines for this pet's subcategory
-    available_vaccines = Vaccine.objects.filter(
-        subcategory=pet.sub_category
-    ).order_by('recommended_age')
+    # Get all vaccines for this pet's subcategory (with special case for Sheep/Goat)
+    from adminapp.models import PetSubcategory
+    
+    # Special case: Sheep and Goat share vaccines with Cattle
+    if pet.sub_category.petsubcategory in ['Sheep', 'Goat']:
+        cattle_sub = PetSubcategory.objects.get(petsubcategory='Cattle')
+        available_vaccines = Vaccine.objects.filter(
+            subcategory=cattle_sub
+        ).order_by('recommended_age')
+        print(f"DEBUG - Sheep/Goat using Cattle vaccines: {available_vaccines.count()} found")
+    else:
+        available_vaccines = Vaccine.objects.filter(
+            subcategory=pet.sub_category
+        ).order_by('recommended_age')
     
     # Get already given vaccines with dates
     given_appointments = Appointment.objects.filter(
