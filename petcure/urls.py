@@ -28,15 +28,17 @@ urlpatterns = [
     path('delivery/',include('deliveryapp.urls')),
 ]
 
-# Serve static files in development
+# Serve static and media files in development
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATICFILES_DIRS[0])
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 else:
-    # Even in production-like mode, we need static files for 404 page
+    # Even in production-like mode, we need static and media files
     from django.views.static import serve
     from django.urls import re_path
     urlpatterns += [
         re_path(r'^static/(?P<path>.*)$', serve, {'document_root': settings.STATICFILES_DIRS[0]}),
+        re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
     ]
 
 # Custom error handlers
