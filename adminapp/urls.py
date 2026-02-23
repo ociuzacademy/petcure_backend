@@ -45,4 +45,5 @@ urlpatterns = [
     path('api/doctor/complaints/<int:doctor_id>/', views.get_doctor_complaints, name='get_doctor_complaints_by_id'),
     path('api/doctor/complaint/<int:complaint_id>/update/', views.update_complaint_status, name='update_complaint_status'),
     path('api/doctor/feedback/submit/', views.submit_doctor_feedback, name='submit_doctor_feedback'),
+    path('manage_subcategories/', views.manage_subcategories, name='manage_subcategories'),
 ]

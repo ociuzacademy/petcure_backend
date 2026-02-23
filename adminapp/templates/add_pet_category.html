@@ -82,21 +82,8 @@
                                 {% for sub in cat.subcategories.all %}
                                     <span class="badge bg-secondary me-1 mb-1">{{ sub.petsubcategory }}</span>
 
-                                    <!-- Edit Subcategory -->
-                                    <button class="btn btn-sm btn-outline-warning mb-1" data-bs-toggle="modal" data-bs-target="#editSubModal{{ sub.id }}">
-                                        <i class="bi bi-pencil-square"></i>
-                                    </button>
 
-                                    <!-- Delete Subcategory -->
-                                    <form method="POST" action="{% url 'delete_pet_subcategory' %}" style="display:inline;">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="sub_id" value="{{ sub.id }}">
-                                        <button type="submit" class="btn btn-sm btn-outline-danger mb-1" onclick="return confirm('Delete this subcategory?');">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </form>
-
-                                    <!-- Edit Subcategory Modal -->
+                                    <!-- Edit Subcategory Modal
                                     <div class="modal fade" id="editSubModal{{ sub.id }}" tabindex="-1">
                                         <div class="modal-dialog">
                                             <div class="modal-content">
@@ -117,7 +104,7 @@
                                                 </form>
                                             </div>
                                         </div>
-                                    </div>
+                                    </div> -->
 
                                 {% endfor %}
                             {% else %}

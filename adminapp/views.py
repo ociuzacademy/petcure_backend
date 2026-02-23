@@ -8,6 +8,25 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
 from django.core.paginator import Paginator
+import math
+
+# Helper function for distance calculation
+def calculate_distance(lat1, lon1, lat2, lon2):
+    """Calculate distance between two coordinates using Haversine formula (returns km)"""
+    R = 6371  # Earth's radius in kilometers
+    
+    lat1_rad = math.radians(lat1)
+    lon1_rad = math.radians(lon1)
+    lat2_rad = math.radians(lat2)
+    lon2_rad = math.radians(lon2)
+    
+    dlat = lat2_rad - lat1_rad
+    dlon = lon2_rad - lon1_rad
+    
+    a = math.sin(dlat/2)**2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlon/2)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+    
+    return round(R * c, 2)  # Distance in kilometers, rounded to 2 decimal places
 
 @register.filter
 def get_item(dictionary, key):
@@ -72,6 +91,11 @@ def add_pet_category(request):
     # Show existing categories + subcategories
     categories = PetCategory.objects.prefetch_related('subcategories').all()
     return render(request, 'add_pet_category.html', {'categories': categories})
+
+def manage_subcategories(request):
+    """View to manage all subcategories (edit/delete)"""
+    categories = PetCategory.objects.prefetch_related('subcategories').all()
+    return render(request, 'manage_subcategories.html', {'categories': categories})
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
@@ -441,7 +465,46 @@ def reject_delivery_boy(request):
 def assign_orders(request):
     # ✅ Show only orders with status = "order placed"
     orders = Order.objects.filter(status="order placed").select_related("user")
+    
+    # Get user location for sorting agents (if available)
+    user_lat = request.GET.get('user_lat')
+    user_lon = request.GET.get('user_lon')
+    
+    # Get all approved agents
     delivery_agents = DeliveryAgent.objects.filter(is_approved=True)
+    
+    # If user location is provided, sort agents by distance
+    if user_lat and user_lon:
+        try:
+            user_lat = float(user_lat)
+            user_lon = float(user_lon)
+            
+            # Calculate distance for each agent and sort
+            agent_list = []
+            for agent in delivery_agents:
+                if agent.latitude and agent.longitude:
+                    distance = calculate_distance(
+                        user_lat, user_lon,
+                        float(agent.latitude), float(agent.longitude)
+                    )
+                    agent_list.append({
+                        'agent': agent,
+                        'distance': distance
+                    })
+                else:
+                    agent_list.append({
+                        'agent': agent,
+                        'distance': float('inf')  # Agents without location at the end
+                    })
+            
+            # Sort by distance
+            agent_list.sort(key=lambda x: x['distance'])
+            delivery_agents = [item['agent'] for item in agent_list]
+            
+        except (ValueError, TypeError):
+            # If location parsing fails, use unsorted list
+            pass
+    
     return render(request, "assign_orders.html", {
         "orders": orders,
         "delivery_agents": delivery_agents,
@@ -461,9 +524,28 @@ def assign_delivery_agent(request, order_id):
     if request.method == "POST":
         order = get_object_or_404(Order, id=order_id)
         agent_id = request.POST.get("delivery_agent_id")
+        user_lat = request.POST.get("user_lat")
+        user_lon = request.POST.get("user_lon")
 
         if agent_id:
             delivery_agent = get_object_or_404(DeliveryAgent, id=agent_id)
+            
+            # Check if agent is within service radius (if user location is provided)
+            if user_lat and user_lon and delivery_agent.latitude and delivery_agent.longitude:
+                try:
+                    distance = calculate_distance(
+                        float(user_lat), float(user_lon),
+                        float(delivery_agent.latitude), float(delivery_agent.longitude)
+                    )
+                    
+                    if distance > delivery_agent.service_radius:
+                        messages.warning(
+                            request,
+                            f"Warning: Agent is {distance}km away, which exceeds their service radius of {delivery_agent.service_radius}km. Assignment still completed."
+                        )
+                except (ValueError, TypeError):
+                    # If location parsing fails, continue with assignment
+                    pass
             
             # ✅ assign agent correctly
             order.assigned_agent = delivery_agent
