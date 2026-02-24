@@ -17,8 +17,8 @@ class UserSerializer(serializers.ModelSerializer):
             rep['image'] = instance.image.url
         # Convert place code to display name
         if instance.place:
-            from .models import DISTRICT_CHOICES
-            place_dict = dict(DISTRICT_CHOICES)
+            from .models import PLACE_CHOICES
+            place_dict = dict(PLACE_CHOICES)
             rep['place_display'] = place_dict.get(instance.place, instance.place)
         return rep
         

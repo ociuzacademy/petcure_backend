@@ -6,14 +6,13 @@ from userapp.models import *
 class DeliveryBoySerializer(serializers.ModelSerializer):
     class Meta:
         model = DeliveryAgent
-        fields = ['id', 'username', 'email', 'phone', 'address', 'place', 'profile_image', 'id_card_image', 'status', 'is_approved', 'created_at', 'latitude', 'longitude', 'service_radius', 'is_available']
-
+        fields = ['id', 'username', 'email', 'phone', 'address', 'place', 'profile_image', 'id_card_image', 'status', 'is_approved', 'created_at', 'service_radius', 'is_available']
     def to_representation(self, instance):
         rep = super().to_representation(instance)
         # Add place display name
         if instance.place:
-            from .models import DISTRICT_CHOICES
-            place_dict = dict(DISTRICT_CHOICES)
+            from .models import PLACE_CHOICES
+            place_dict = dict(PLACE_CHOICES)
             rep['place_display'] = place_dict.get(instance.place, instance.place)
         return rep
         

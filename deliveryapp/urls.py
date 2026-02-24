@@ -47,6 +47,6 @@ urlpatterns = [
     path('assigned_orders/', AssignedOnTheWayOrdersView.as_view(), name='assigned_orders'),
     path('order_detail/', OrderDetailView.as_view(), name='order_detail'),
     path('update_profile/',UpdateDeliveryAgentProfileView.as_view(), name='update_delivery_agent_profile'),
-    path('update-location/', views.UpdateDeliveryAgentLocationView.as_view(), name='update_delivery_location'),
+    path('update-availability/', views.UpdateDeliveryAgentAvailabilityView.as_view(), name='update_delivery_availability'),
     path('available-agents/', views.GetAvailableDeliveryAgentsView.as_view(), name='available_delivery_agents'),
 ]

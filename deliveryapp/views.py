@@ -10,7 +10,7 @@ from rest_framework.views import APIView
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.conf import settings
-import math
+from .models import DeliveryAgent, PLACE_CHOICES
 
 
 # Create your views here.
@@ -295,17 +295,15 @@ class UpdateDeliveryAgentProfileView(generics.UpdateAPIView):
             status=status.HTTP_200_OK
         )
         
-class UpdateDeliveryAgentLocationView(APIView):
+class UpdateDeliveryAgentAvailabilityView(APIView):
     """
-    API for delivery agents to update their current location
-    PATCH: /delivery/update-location/
+    API for delivery agents to update their availability status
+    PATCH: /delivery/update-availability/
     """
     
     def patch(self, request):
         agent_id = request.data.get('agent_id')
-        latitude = request.data.get('latitude')
-        longitude = request.data.get('longitude')
-        is_available = request.data.get('is_available')  # Optional
+        is_available = request.data.get('is_available')  # Required
         
         if not agent_id:
             return Response({
@@ -313,33 +311,25 @@ class UpdateDeliveryAgentLocationView(APIView):
                 "message": "agent_id is required"
             }, status=status.HTTP_400_BAD_REQUEST)
         
-        if not latitude or not longitude:
+        if is_available is None:
             return Response({
                 "status": "error",
-                "message": "latitude and longitude are required"
+                "message": "is_available is required"
             }, status=status.HTTP_400_BAD_REQUEST)
         
         try:
             agent = DeliveryAgent.objects.get(id=agent_id, status='approved')
             
-            # Update location
-            agent.latitude = latitude
-            agent.longitude = longitude
-            
-            # Update availability if provided
-            if is_available is not None:
-                agent.is_available = is_available
-                
+            # Update availability only
+            agent.is_available = is_available
             agent.save()
             
             return Response({
                 "status": "success",
-                "message": "Location updated successfully",
+                "message": "Availability updated successfully",
                 "data": {
                     "agent_id": agent.id,
                     "username": agent.username,
-                    "latitude": float(agent.latitude),
-                    "longitude": float(agent.longitude),
                     "is_available": agent.is_available
                 }
             }, status=status.HTTP_200_OK)
@@ -352,71 +342,34 @@ class UpdateDeliveryAgentLocationView(APIView):
         
 class GetAvailableDeliveryAgentsView(APIView):
     """
-    API to get available delivery agents near a location
-    GET: /delivery/available-agents/?latitude=xx&longitude=xx&radius=10
-    Returns agents within specified radius sorted by distance
+    API to get available delivery agents by place
+    GET: /delivery/available-agents/?place=xxx
+    Returns agents in the specified place
     """
-    
-    def calculate_distance(self, lat1, lon1, lat2, lon2):
-        """Calculate distance between two coordinates using Haversine formula"""
-        R = 6371  # Earth's radius in kilometers
-        
-        lat1_rad = math.radians(lat1)
-        lon1_rad = math.radians(lon1)
-        lat2_rad = math.radians(lat2)
-        lon2_rad = math.radians(lon2)
-        
-        dlat = lat2_rad - lat1_rad
-        dlon = lon2_rad - lon1_rad
-        
-        a = math.sin(dlat/2)**2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlon/2)**2
-        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
-        
-        return R * c
     
     def get(self, request):
         # Get query parameters
-        user_lat = request.query_params.get('latitude')
-        user_lon = request.query_params.get('longitude')
-        search_radius = request.query_params.get('radius', 10)  # Default 10km
-        place = request.query_params.get('place')  # Optional: filter by place (district)
+        place = request.query_params.get('place')  # Required: filter by place
         order_id = request.query_params.get('order_id')  # Optional: to exclude already assigned agent
         
         # Validate required parameters
-        if not user_lat or not user_lon:
+        if not place:
             return Response({
                 "status": "error",
-                "message": "latitude and longitude are required"
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
-        try:
-            user_lat = float(user_lat)
-            user_lon = float(user_lon)
-            search_radius = float(search_radius)
-        except ValueError:
-            return Response({
-                "status": "error",
-                "message": "Invalid latitude, longitude, or radius values"
+                "message": "place is required"
             }, status=status.HTTP_400_BAD_REQUEST)
         
         # Get all approved and available agents
         agents = DeliveryAgent.objects.filter(
             status='approved',
-            is_available=True,
-            latitude__isnull=False,
-            longitude__isnull=False
+            is_available=True
         )
         
-        # Filter by place if provided
-        place = request.query_params.get('place')
-        if place:
-            agents = agents.filter(place=place)
-            print(f"DEBUG - Filtering by place: {place}, found: {agents.count()} agents")
+        print(f"DEBUG - Total approved & available agents: {agents.count()}")
         
-        # Filter by place if provided
-        place = request.query_params.get('place')
-        if place:
-            agents = agents.filter(place=place)
+        # Filter by place
+        agents = agents.filter(place=place)
+        print(f"DEBUG - Filtering by place: {place}, found: {agents.count()} agents")
         
         # If order_id provided, exclude the currently assigned agent (if any)
         if order_id:
@@ -427,63 +380,31 @@ class GetAvailableDeliveryAgentsView(APIView):
             except Order.DoesNotExist:
                 pass
         
-        # Calculate distances and filter within radius
-        nearby_agents = []
-        print(f"DEBUG - Processing {agents.count()} agents for distance calculation")
-        
+        # Prepare response
+        agent_list = []
         for agent in agents:
-            try:
-                print(f"DEBUG - Agent {agent.id}: lat={agent.latitude}, lon={agent.longitude}")
-                
-                distance = self.calculate_distance(
-                    user_lat, user_lon,
-                    float(agent.latitude), float(agent.longitude)
-                )
-                print(f"DEBUG - Agent {agent.id}: distance={distance}km")
-                
-                # Check if within search radius AND within agent's service radius
-                if distance <= search_radius and distance <= agent.service_radius:
-                    print(f"DEBUG - Agent {agent.id} is within range")
-                    
-                    # Handle profile image safely
+            # Handle profile image safely
+            profile_image_url = None
+            if agent.profile_image:
+                try:
+                    profile_image_url = agent.profile_image.url
+                except:
                     profile_image_url = None
-                    if agent.profile_image:
-                        try:
-                            profile_image_url = agent.profile_image.url
-                        except:
-                            profile_image_url = None
-                    
-                    nearby_agents.append({
-                        "id": agent.id,
-                        "username": agent.username,
-                        "phone": agent.phone,
-                        "email": agent.email,
-                        "place": agent.place,
-                        "place_display": dict(DISTRICT_CHOICES).get(agent.place, agent.place) if hasattr(agent, 'place') else None,
-                        "profile_image": profile_image_url,
-                        "latitude": float(agent.latitude),
-                        "longitude": float(agent.longitude),
-                        "distance_km": round(distance, 2),
-                        "service_radius": agent.service_radius,
-                        "is_available": agent.is_available
-                    })
-                else:
-                    print(f"DEBUG - Agent {agent.id} outside range (distance={distance} > radius={search_radius} or > service_radius={agent.service_radius})")
-                    
-            except Exception as e:
-                print(f"DEBUG - Error processing agent {agent.id}: {str(e)}")
-                continue
-        
-        print(f"DEBUG - Found {len(nearby_agents)} nearby agents")
-        
-        # Sort by distance (closest first)
-        nearby_agents.sort(key=lambda x: x["distance_km"])
-        
-        # Sort by distance (closest first)
-        nearby_agents.sort(key=lambda x: x["distance_km"])
+            
+            agent_list.append({
+                "id": agent.id,
+                "username": agent.username,
+                "phone": agent.phone,
+                "email": agent.email,
+                "place": agent.place,
+                "place_display": dict(PLACE_CHOICES).get(agent.place, agent.place) if hasattr(agent, 'place') else None,
+                "profile_image": profile_image_url,
+                "service_radius": agent.service_radius,
+                "is_available": agent.is_available
+            })
         
         return Response({
             "status": "success",
-            "count": len(nearby_agents),
-            "agents": nearby_agents
+            "count": len(agent_list),
+            "agents": agent_list
         }, status=status.HTTP_200_OK)
