@@ -74,7 +74,6 @@ class DeliveryBoyRegistrationView(viewsets.ModelViewSet):
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
 
 
-
 class DeliveryBoyLoginAPI(APIView):
     def post(self, request):
         serializer = DeliveryBoyLoginSerializer(data=request.data)
@@ -147,7 +146,7 @@ class ConfirmDeliveryView(APIView):
         order.save()
 
         # ✅ Send delivery confirmation email
-        subject = f"🎉 Order #{order.id} Delivered Successfully!"
+        subject = f" Order #{order.id} Delivered Successfully!"
         context = {
             "user": order.user,
             "order": order,
@@ -243,8 +242,6 @@ class AssignedOnTheWayOrdersView(APIView):
         }, status=status.HTTP_200_OK)
 
 
-
-    
 class OrderDetailView(APIView):
 
     def get(self, request):
