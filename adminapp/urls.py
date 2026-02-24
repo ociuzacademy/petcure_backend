@@ -8,6 +8,7 @@ urlpatterns = [
     path('logout/',views.logout,name='logout'),
     path('add_pet_category/', add_pet_category, name='add_pet_category'),
     path('edit_pet_category/', views.edit_pet_category, name='edit_pet_category'),
+    path('edit_pet_category_page/<int:category_id>/', views.edit_pet_category_page, name='edit_pet_category_page'),
     path('delete_pet_category/', views.delete_pet_category, name='delete_pet_category'),
     path('edit_pet_subcategory/', views.edit_pet_subcategory, name='edit_pet_subcategory'),
     path('delete_pet-subcategory/', views.delete_pet_subcategory, name='delete_pet_subcategory'),

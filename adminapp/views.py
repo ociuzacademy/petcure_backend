@@ -114,6 +114,74 @@ def edit_pet_category(request):
     return redirect('add_pet_category')
 
 
+@csrf_exempt
+def edit_pet_category_page(request, category_id):
+    """
+    Full page view for editing a pet category and its subcategories
+    """
+    category = get_object_or_404(PetCategory, id=category_id)
+    
+    # Debug: Print request method and all data
+    print("="*50)
+    print(f"REQUEST METHOD: {request.method}")
+    print(f"REQUEST PATH: {request.path}")
+    print("GET data:")
+    for key, value in request.GET.items():
+        print(f"  {key}: {value}")
+    print("POST data:")
+    for key, value in request.POST.items():
+        print(f"  {key}: {value}")
+    print("="*50)
+    
+    # Handle form submissions
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        # Handle new subcategory addition
+        if action == 'add_subcategory':
+            new_subcategory = request.POST.get('new_subcategory')
+            if new_subcategory and new_subcategory.strip():
+                # Check if subcategory already exists
+                existing = PetSubcategory.objects.filter(
+                    petcategory=category,
+                    petsubcategory__iexact=new_subcategory.strip()
+                ).exists()
+                
+                if existing:
+                    messages.warning(request, f"Subcategory '{new_subcategory}' already exists!")
+                else:
+                    PetSubcategory.objects.create(
+                        petcategory=category,
+                        petsubcategory=new_subcategory.strip()
+                    )
+                    messages.success(request, f"Subcategory '{new_subcategory}' added successfully!")
+            else:
+                messages.error(request, "Please enter a subcategory name.")
+            
+            return redirect('edit_pet_category_page', category_id=category.id)
+        
+        # Handle category save
+        elif action == 'save_category':
+            new_category_name = request.POST.get('petcategory')
+            if new_category_name and new_category_name != category.petcategory:
+                category.petcategory = new_category_name
+                category.save()
+                messages.success(request, "Category name updated successfully!")
+            
+            return redirect('edit_pet_category_page', category_id=category.id)
+        
+        # Default redirect
+        return redirect('edit_pet_category_page', category_id=category.id)
+    
+    # GET request - show the edit page
+    subcategories = category.subcategories.all()
+    
+    return render(request, 'edit_pet_category_page.html', {
+        'category': category,
+        'subcategories': subcategories,
+    })
+
+
 # Delete Category via POST (ID in form)
 def delete_pet_category(request):
     if request.method == 'POST':
