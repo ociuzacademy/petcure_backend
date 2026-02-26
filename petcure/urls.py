@@ -40,7 +40,6 @@ else:
         re_path(r'^static/(?P<path>.*)$', serve, {'document_root': settings.STATICFILES_DIRS[0]}),
         re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
     ]
-
 # Custom error handlers
 handler404 = 'petcure.views.custom_404'
 
