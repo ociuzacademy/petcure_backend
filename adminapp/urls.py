@@ -8,6 +8,7 @@ urlpatterns = [
     path('logout/',views.logout,name='logout'),
     path('add_pet_category/', add_pet_category, name='add_pet_category'),
     path('edit_pet_category/', views.edit_pet_category, name='edit_pet_category'),
+    path('edit_pet_category_page/<int:category_id>/', views.edit_pet_category_page, name='edit_pet_category_page'),
     path('delete_pet_category/', views.delete_pet_category, name='delete_pet_category'),
     path('edit_pet_subcategory/', views.edit_pet_subcategory, name='edit_pet_subcategory'),
     path('delete_pet-subcategory/', views.delete_pet_subcategory, name='delete_pet_subcategory'),
@@ -45,4 +46,5 @@ urlpatterns = [
     path('api/doctor/complaints/<int:doctor_id>/', views.get_doctor_complaints, name='get_doctor_complaints_by_id'),
     path('api/doctor/complaint/<int:complaint_id>/update/', views.update_complaint_status, name='update_complaint_status'),
     path('api/doctor/feedback/submit/', views.submit_doctor_feedback, name='submit_doctor_feedback'),
+    path('manage_subcategories/', views.manage_subcategories, name='manage_subcategories'),
 ]

@@ -10,6 +10,7 @@ from rest_framework.views import APIView
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.conf import settings
+from .models import DeliveryAgent, PLACE_CHOICES
 
 
 # Create your views here.
@@ -71,7 +72,6 @@ class DeliveryBoyRegistrationView(viewsets.ModelViewSet):
                 "errors": serializer.errors
             }
             return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
-
 
 
 class DeliveryBoyLoginAPI(APIView):
@@ -146,7 +146,7 @@ class ConfirmDeliveryView(APIView):
         order.save()
 
         # ✅ Send delivery confirmation email
-        subject = f"🎉 Order #{order.id} Delivered Successfully!"
+        subject = f" Order #{order.id} Delivered Successfully!"
         context = {
             "user": order.user,
             "order": order,
@@ -242,8 +242,6 @@ class AssignedOnTheWayOrdersView(APIView):
         }, status=status.HTTP_200_OK)
 
 
-
-    
 class OrderDetailView(APIView):
 
     def get(self, request):
@@ -294,3 +292,116 @@ class UpdateDeliveryAgentProfileView(generics.UpdateAPIView):
             status=status.HTTP_200_OK
         )
         
+class UpdateDeliveryAgentAvailabilityView(APIView):
+    """
+    API for delivery agents to update their availability status
+    PATCH: /delivery/update-availability/
+    """
+    
+    def patch(self, request):
+        agent_id = request.data.get('agent_id')
+        is_available = request.data.get('is_available')  # Required
+        
+        if not agent_id:
+            return Response({
+                "status": "error",
+                "message": "agent_id is required"
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        if is_available is None:
+            return Response({
+                "status": "error",
+                "message": "is_available is required"
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            agent = DeliveryAgent.objects.get(id=agent_id, status='approved')
+            
+            # Update availability only
+            agent.is_available = is_available
+            agent.save()
+            
+            return Response({
+                "status": "success",
+                "message": "Availability updated successfully",
+                "data": {
+                    "agent_id": agent.id,
+                    "username": agent.username,
+                    "is_available": agent.is_available
+                }
+            }, status=status.HTTP_200_OK)
+            
+        except DeliveryAgent.DoesNotExist:
+            return Response({
+                "status": "error",
+                "message": "Delivery agent not found or not approved"
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+class GetAvailableDeliveryAgentsView(APIView):
+    """
+    API to get available delivery agents by place
+    GET: /delivery/available-agents/?place=xxx
+    Returns agents in the specified place
+    """
+    
+    def get(self, request):
+        # Get query parameters
+        place = request.query_params.get('place')  # Required: filter by place
+        order_id = request.query_params.get('order_id')  # Optional: to exclude already assigned agent
+        
+        # Validate required parameters
+        if not place:
+            return Response({
+                "status": "error",
+                "message": "place is required"
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Get all approved and available agents
+        agents = DeliveryAgent.objects.filter(
+            status='approved',
+            is_available=True
+        )
+        
+        print(f"DEBUG - Total approved & available agents: {agents.count()}")
+        
+        # Filter by place
+        agents = agents.filter(place=place)
+        print(f"DEBUG - Filtering by place: {place}, found: {agents.count()} agents")
+        
+        # If order_id provided, exclude the currently assigned agent (if any)
+        if order_id:
+            try:
+                order = Order.objects.get(id=order_id)
+                if order.assigned_agent:
+                    agents = agents.exclude(id=order.assigned_agent.id)
+            except Order.DoesNotExist:
+                pass
+        
+        # Prepare response
+        agent_list = []
+        for agent in agents:
+            # Handle profile image safely
+            profile_image_url = None
+            if agent.profile_image:
+                try:
+                    profile_image_url = agent.profile_image.url
+                except:
+                    profile_image_url = None
+            
+            agent_list.append({
+                "id": agent.id,
+                "username": agent.username,
+                "phone": agent.phone,
+                "email": agent.email,
+                "place": agent.place,
+                "place_display": dict(PLACE_CHOICES).get(agent.place, agent.place) if hasattr(agent, 'place') else None,
+                "profile_image": profile_image_url,
+                "service_radius": agent.service_radius,
+                "is_available": agent.is_available
+            })
+        
+        return Response({
+            "status": "success",
+            "count": len(agent_list),
+            "agents": agent_list
+        }, status=status.HTTP_200_OK)

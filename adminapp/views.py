@@ -8,6 +8,25 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
 from django.core.paginator import Paginator
+import math
+
+# Helper function for distance calculation
+def calculate_distance(lat1, lon1, lat2, lon2):
+    """Calculate distance between two coordinates using Haversine formula (returns km)"""
+    R = 6371  # Earth's radius in kilometers
+    
+    lat1_rad = math.radians(lat1)
+    lon1_rad = math.radians(lon1)
+    lat2_rad = math.radians(lat2)
+    lon2_rad = math.radians(lon2)
+    
+    dlat = lat2_rad - lat1_rad
+    dlon = lon2_rad - lon1_rad
+    
+    a = math.sin(dlat/2)**2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlon/2)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+    
+    return round(R * c, 2)  # Distance in kilometers, rounded to 2 decimal places
 
 @register.filter
 def get_item(dictionary, key):
@@ -73,6 +92,11 @@ def add_pet_category(request):
     categories = PetCategory.objects.prefetch_related('subcategories').all()
     return render(request, 'add_pet_category.html', {'categories': categories})
 
+def manage_subcategories(request):
+    """View to manage all subcategories (edit/delete)"""
+    categories = PetCategory.objects.prefetch_related('subcategories').all()
+    return render(request, 'manage_subcategories.html', {'categories': categories})
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from .models import PetCategory, PetSubcategory
@@ -88,6 +112,74 @@ def edit_pet_category(request):
             category.save()
             messages.success(request, "Category updated successfully!")
     return redirect('add_pet_category')
+
+
+@csrf_exempt
+def edit_pet_category_page(request, category_id):
+    """
+    Full page view for editing a pet category and its subcategories
+    """
+    category = get_object_or_404(PetCategory, id=category_id)
+    
+    # Debug: Print request method and all data
+    print("="*50)
+    print(f"REQUEST METHOD: {request.method}")
+    print(f"REQUEST PATH: {request.path}")
+    print("GET data:")
+    for key, value in request.GET.items():
+        print(f"  {key}: {value}")
+    print("POST data:")
+    for key, value in request.POST.items():
+        print(f"  {key}: {value}")
+    print("="*50)
+    
+    # Handle form submissions
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        # Handle new subcategory addition
+        if action == 'add_subcategory':
+            new_subcategory = request.POST.get('new_subcategory')
+            if new_subcategory and new_subcategory.strip():
+                # Check if subcategory already exists
+                existing = PetSubcategory.objects.filter(
+                    petcategory=category,
+                    petsubcategory__iexact=new_subcategory.strip()
+                ).exists()
+                
+                if existing:
+                    messages.warning(request, f"Subcategory '{new_subcategory}' already exists!")
+                else:
+                    PetSubcategory.objects.create(
+                        petcategory=category,
+                        petsubcategory=new_subcategory.strip()
+                    )
+                    messages.success(request, f"Subcategory '{new_subcategory}' added successfully!")
+            else:
+                messages.error(request, "Please enter a subcategory name.")
+            
+            return redirect('edit_pet_category_page', category_id=category.id)
+        
+        # Handle category save
+        elif action == 'save_category':
+            new_category_name = request.POST.get('petcategory')
+            if new_category_name and new_category_name != category.petcategory:
+                category.petcategory = new_category_name
+                category.save()
+                messages.success(request, "Category name updated successfully!")
+            
+            return redirect('edit_pet_category_page', category_id=category.id)
+        
+        # Default redirect
+        return redirect('edit_pet_category_page', category_id=category.id)
+    
+    # GET request - show the edit page
+    subcategories = category.subcategories.all()
+    
+    return render(request, 'edit_pet_category_page.html', {
+        'category': category,
+        'subcategories': subcategories,
+    })
 
 
 # Delete Category via POST (ID in form)
@@ -440,14 +532,16 @@ def reject_delivery_boy(request):
 
 def assign_orders(request):
     # ✅ Show only orders with status = "order placed"
-    orders = Order.objects.filter(status="order placed").select_related("user")
+    orders = Order.objects.filter(status="order placed").select_related("user").prefetch_related("payment_set")
+    
+    # Get all approved agents
     delivery_agents = DeliveryAgent.objects.filter(is_approved=True)
+    
     return render(request, "assign_orders.html", {
         "orders": orders,
         "delivery_agents": delivery_agents,
     })
-    
-    
+        
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
@@ -540,6 +634,7 @@ def reject_doctor(request):
 def admin_view_orders(request):
     orders = Order.objects.exclude(status='pending').order_by('-order_date')
     return render(request, 'view_orders.html', {'orders': orders})
+
 
 def pending_delivery_agents(request):
     pending_boys = DeliveryAgent.objects.filter(status='pending')

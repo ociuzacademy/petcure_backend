@@ -4,6 +4,7 @@ from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from rest_framework.routers import DefaultRouter
+from . import views
 from .views import *
 
 schema_view = get_schema_view(
@@ -45,5 +46,7 @@ urlpatterns = [
     path("confirm_delivery/", ConfirmDeliveryView.as_view(), name="confirm_delivery"),
     path('assigned_orders/', AssignedOnTheWayOrdersView.as_view(), name='assigned_orders'),
     path('order_detail/', OrderDetailView.as_view(), name='order_detail'),
-    path('update_profile/',UpdateDeliveryAgentProfileView.as_view(), name='update_delivery_agent_profile')
+    path('update_profile/',UpdateDeliveryAgentProfileView.as_view(), name='update_delivery_agent_profile'),
+    path('update-availability/', views.UpdateDeliveryAgentAvailabilityView.as_view(), name='update_delivery_availability'),
+    path('available-agents/', views.GetAvailableDeliveryAgentsView.as_view(), name='available_delivery_agents'),
 ]

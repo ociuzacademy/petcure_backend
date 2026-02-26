@@ -15,6 +15,17 @@ class UserSerializer(serializers.ModelSerializer):
         rep = super().to_representation(instance)
         if instance.image:
             rep['image'] = instance.image.url
+        # Convert place code to display name
+        if instance.place:
+            from .models import PLACE_CHOICES
+            place_dict = dict(PLACE_CHOICES)
+            rep['place_display'] = place_dict.get(instance.place, instance.place)
+        return rep
+        
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        if instance.image:
+            rep['image'] = instance.image.url
         return rep
     
     def validate_email(self, value):

@@ -5,16 +5,50 @@ from deliveryapp.models import *
 from django.core.exceptions import ValidationError
 from datetime import datetime
 
+# Place choices for Thrissur district only
+PLACE_CHOICES = [
+    ('thrissur', 'Thrissur'),
+    ('kunnamkulam', 'Kunnamkulam'),
+    ('chalakkudy', 'Chalakkudy'),
+    ('kodungallur', 'Kodungallur'),
+    ('guruvayur', 'Guruvayur'),
+    ('iriyur', 'Iriyur'),
+    ('cholapuram', 'Cholapuram'),
+    ('elavally', 'Elavally'),
+    ('karumathra', 'Karumathra'),
+    ('kattakampal', 'Kattakampal'),
+    ('manalur', 'Manalur'),
+    ('minalur', 'Minalur'),
+    ('mullassery', 'Mullassery'),
+    ('nadathara', 'Nadathara'),
+    ('naduvil', 'Naduvil'),
+    ('nellayi', 'Nellayi'),
+    ('ollur', 'Ollur'),
+    ('panamkutty', 'Panamkutty'),
+    ('pandipulam', 'Pandipulam'),
+    ('parappukkara', 'Parappukkara'),
+    ('peedika', 'Peedika'),
+    ('perakam', 'Perakam'),
+    ('perumannur', 'Perumannur'),
+    ('pullazhi', 'Pullazhi'),
+    ('puthenchira', 'Puthenchira'),
+    ('thangalur', 'Thangalur'),
+    ('thayyur', 'Thayyur'),
+    ('thiruvilwamala', 'Thiruvilwamala'),
+    ('thozhiyur', 'Thozhiyur'),
+    ('velur', 'Velur'),
+    ('venmanad', 'Venmanad'),
+]
+
 # Create your models here.
 class User(models.Model):
     username=models.CharField(max_length=100)
     email=models.CharField(max_length=100)
     address= models.CharField(max_length=100,default="")
+    place = models.CharField(max_length=50, choices=PLACE_CHOICES, default='thrissur', help_text="Place in Thrissur district")
     password=models.CharField(max_length=100)
     phone=models.CharField(max_length=20,default="")
     image=models.ImageField(upload_to="user_image", null=True, blank=True)
-    latitude = models.DecimalField(max_digits=11, decimal_places=7,default=0.0)
-    longitude=models.DecimalField(max_digits=11, decimal_places=7,default=0.0)
     number_of_pets = models.IntegerField(default=0)
     
     
