@@ -532,53 +532,16 @@ def reject_delivery_boy(request):
 
 def assign_orders(request):
     # ✅ Show only orders with status = "order placed"
-    orders = Order.objects.filter(status="order placed").select_related("user")
-    
-    # Get user location for sorting agents (if available)
-    user_lat = request.GET.get('user_lat')
-    user_lon = request.GET.get('user_lon')
+    orders = Order.objects.filter(status="order placed").select_related("user").prefetch_related("payment_set")
     
     # Get all approved agents
     delivery_agents = DeliveryAgent.objects.filter(is_approved=True)
-    
-    # If user location is provided, sort agents by distance
-    if user_lat and user_lon:
-        try:
-            user_lat = float(user_lat)
-            user_lon = float(user_lon)
-            
-            # Calculate distance for each agent and sort
-            agent_list = []
-            for agent in delivery_agents:
-                if agent.latitude and agent.longitude:
-                    distance = calculate_distance(
-                        user_lat, user_lon,
-                        float(agent.latitude), float(agent.longitude)
-                    )
-                    agent_list.append({
-                        'agent': agent,
-                        'distance': distance
-                    })
-                else:
-                    agent_list.append({
-                        'agent': agent,
-                        'distance': float('inf')  # Agents without location at the end
-                    })
-            
-            # Sort by distance
-            agent_list.sort(key=lambda x: x['distance'])
-            delivery_agents = [item['agent'] for item in agent_list]
-            
-        except (ValueError, TypeError):
-            # If location parsing fails, use unsorted list
-            pass
     
     return render(request, "assign_orders.html", {
         "orders": orders,
         "delivery_agents": delivery_agents,
     })
-    
-    
+        
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
@@ -592,28 +555,9 @@ def assign_delivery_agent(request, order_id):
     if request.method == "POST":
         order = get_object_or_404(Order, id=order_id)
         agent_id = request.POST.get("delivery_agent_id")
-        user_lat = request.POST.get("user_lat")
-        user_lon = request.POST.get("user_lon")
 
         if agent_id:
             delivery_agent = get_object_or_404(DeliveryAgent, id=agent_id)
-            
-            # Check if agent is within service radius (if user location is provided)
-            if user_lat and user_lon and delivery_agent.latitude and delivery_agent.longitude:
-                try:
-                    distance = calculate_distance(
-                        float(user_lat), float(user_lon),
-                        float(delivery_agent.latitude), float(delivery_agent.longitude)
-                    )
-                    
-                    if distance > delivery_agent.service_radius:
-                        messages.warning(
-                            request,
-                            f"Warning: Agent is {distance}km away, which exceeds their service radius of {delivery_agent.service_radius}km. Assignment still completed."
-                        )
-                except (ValueError, TypeError):
-                    # If location parsing fails, continue with assignment
-                    pass
             
             # ✅ assign agent correctly
             order.assigned_agent = delivery_agent
@@ -690,6 +634,7 @@ def reject_doctor(request):
 def admin_view_orders(request):
     orders = Order.objects.exclude(status='pending').order_by('-order_date')
     return render(request, 'view_orders.html', {'orders': orders})
+
 
 def pending_delivery_agents(request):
     pending_boys = DeliveryAgent.objects.filter(status='pending')

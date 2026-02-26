@@ -19,9 +19,11 @@
           <tr>
             <th>#</th>
             <th>User</th>
+            <th>User Place</th>
             <th>Order Date</th>
             <th>Status</th>
             <th>Total Amount</th>
+            <th>Agent Place</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -31,6 +33,13 @@
           <tr>
             <td>{{ forloop.counter }}</td>
             <td class="fw-semibold">{{ order.user.username }}</td>
+            <td>
+              {% if order.user.place %}
+                <span class="badge bg-info text-dark">{{ order.user.place|title }}</span>
+              {% else %}
+                <span class="text-muted">—</span>
+              {% endif %}
+            </td>
             <td>{{ order.order_date|date:"d M Y, h:i A" }}</td>
 
             <!-- Status Badge -->
@@ -51,6 +60,14 @@
             <td class="fw-bold">₹{{ order.total_amount }}</td>
 
             <td>
+              {% if order.assigned_agent %}
+                <span class="badge bg-secondary">{{ order.assigned_agent.place|title }}</span>
+              {% else %}
+                <span class="text-muted">Not assigned</span>
+              {% endif %}
+            </td>
+
+            <td>
               <a href="{% url 'admin_order_detail' order.id %}"
                  class="btn btn-action">
                 View Details
@@ -60,7 +77,7 @@
 
           {% empty %}
           <tr>
-            <td colspan="6" class="text-muted py-3">No orders found.</td>
+            <td colspan="8" class="text-muted py-3">No orders found.</td>
           </tr>
           {% endfor %}
         </tbody>

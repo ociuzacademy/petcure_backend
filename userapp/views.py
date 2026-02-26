@@ -992,6 +992,9 @@ class UPIPaymentView(APIView):
             elif order_id:
                 order = get_object_or_404(Order, id=order_id, user_id=payment.user.id)
                 target_amount = order.total_amount
+                # Link payment to order
+                payment.order = order
+                payment.save(update_fields=['order'])
             
             else:
                 return Response({"error": "Either appointment_id or order_id is required"}, status=status.HTTP_400_BAD_REQUEST)
@@ -1128,7 +1131,9 @@ class CardPaymentView(APIView):                 #Handles Card Payment
             elif order_id:
                 order = get_object_or_404(Order, id=order_id, user_id=payment.user.id)
                 target_amount = order.total_amount
-
+                # Link payment to order
+                payment.order = order
+                payment.save(update_fields=['order'])
             # Validate amount
             if payment.amount != target_amount:
                 payment.payment_status = 'failed'
