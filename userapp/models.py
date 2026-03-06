@@ -62,7 +62,7 @@ class Pet(models.Model):
     category = models.ForeignKey(PetCategory, on_delete=models.CASCADE)
     sub_category = models.ForeignKey(PetSubcategory, on_delete=models.CASCADE)
     weight = models.FloatField()
-    pet_image = models.ImageField(upload_to='pets/')
+    pet_image = models.ImageField(upload_to='pets/', null=True, blank=True)
     health_condition = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

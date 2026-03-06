@@ -51,9 +51,89 @@ def get_next_vaccine_for_pet(pet):
     from userapp.models import Appointment
     
     if not pet or not pet.birth_date:
+        print("DEBUG - No pet or birth_date")
         return None
     
     today = date.today()
+    print(f"DEBUG ====== Starting vaccine calculation for pet {pet.id} ======")
+    print(f"DEBUG - Pet: {pet.name}, Subcategory: {pet.sub_category.petsubcategory}")
+    
+    # Get all vaccines for this pet's subcategory (with special case for Sheep/Goat)
+    from adminapp.models import PetSubcategory
+    
+    # Special case: Sheep and Goat share vaccines with Cattle
+    if pet.sub_category.petsubcategory in ['Sheep', 'Goat']:
+        cattle_sub = PetSubcategory.objects.get(petsubcategory='Cattle')
+        available_vaccines = Vaccine.objects.filter(
+            subcategory=cattle_sub
+        ).order_by('recommended_age')
+        print(f"DEBUG - Sheep/Goat using Cattle vaccines: {available_vaccines.count()} found")
+    else:
+        available_vaccines = Vaccine.objects.filter(
+            subcategory=pet.sub_category
+        ).order_by('recommended_age')
+        print(f"DEBUG - Found {available_vaccines.count()} vaccines for {pet.sub_category.petsubcategory}")
+    
+    if available_vaccines.count() == 0:
+        print("DEBUG - No vaccines available for this pet type")
+        return None
+    
+    # Get already given vaccines with dates
+    given_appointments = Appointment.objects.filter(
+        pet=pet, 
+        reason="Vaccine",
+        vaccine__isnull=False,
+        status__in=['booked', 'payment_completed', 'completed']
+    ).select_related('vaccine').order_by('-date')
+    
+    print(f"DEBUG - Given appointments count: {given_appointments.count()}")
+    
+    # For annual revaccination, only consider PAST appointments
+    past_given_appointments = given_appointments.filter(date__lte=today)
+    print(f"DEBUG - Past appointments count: {past_given_appointments.count()}")
+    
+    given_vaccine_ids = list(given_appointments.values_list('vaccine_id', flat=True))
+    print(f"DEBUG - Given vaccine IDs: {given_vaccine_ids}")
+    
+    # Helper: Parse age string to weeks
+    def parse_age_to_weeks(age_str):
+        age_str = str(age_str).lower()
+        
+        # Extract numbers
+        import re
+        numbers = re.findall(r'\d+', age_str)
+        if not numbers:
+            return 0
+        
+        num = int(numbers[0])
+        
+        if 'week' in age_str:
+            return num
+        elif 'month' in age_str:
+            return num * 4  # Approx: 1 month = 4 weeks
+        elif 'day' in age_str:
+            return num // 7  # Convert days to weeks
+        elif 'year' in age_str:
+            return num * 52  # 1 year = 52 weeks
+        else:
+            # Default assumption for formats like "4 months of age"
+            if 'month' in age_str:
+                return num * 4
+            return 0
+    
+    # Calculate pet's age
+    age_days = (today - pet.birth_date).days
+    age_weeks = age_days // 7
+    age_years = age_days // 365
+    
+    print(f"DEBUG - Age: {age_years} years, {age_weeks} weeks, {age_days} days")
+    
+    # Check if pet is adult (more than 1 year old)
+    is_adult = age_years >= 1
+    print(f"DEBUG - Is adult: {is_adult}")
+    
+    # Continue with the rest of the function...
+    # The existing logic will follow after these debug prints
     
     # Get all vaccines for this pet's subcategory (with special case for Sheep/Goat)
     from adminapp.models import PetSubcategory
@@ -119,41 +199,40 @@ def get_next_vaccine_for_pet(pet):
     
     if is_adult:
         # ADULT PET LOGIC: Focus on annual revaccinations
+        print("DEBUG - Entering adult pet logic")
         
         # 1. First, check for annual revaccinations needed
         annual_vaccines = available_vaccines.filter(annual_revaccination=True)
+        print(f"DEBUG - Annual vaccines count: {annual_vaccines.count()}")
         
         for vaccine in annual_vaccines:
+            print(f"DEBUG - Checking annual vaccine: {vaccine.vaccine_name}")
             # Find when this vaccine was last given (PAST appointments only)
             last_given = past_given_appointments.filter(vaccine_id=vaccine.id).first()
             
             if last_given:
-                # Check if it's been more than 1 year
                 days_since_last = (today - last_given.date).days
+                print(f"DEBUG - Last given: {last_given.date}, days since: {days_since_last}")
                 if days_since_last >= 365:
+                    print(f"DEBUG - Returning annual vaccine: {vaccine.vaccine_name}")
                     return vaccine
             else:
-                # Vaccine never given to this adult pet
-                # Check if it's an adult-appropriate vaccine (not puppy-only)
-                vaccine_age_weeks = parse_age_to_weeks(vaccine.recommended_age)
-                if vaccine_age_weeks <= 52:  # 1 year or less
-                    # Puppy vaccine, adult probably doesn't need it
-                    continue
+                print(f"DEBUG - Vaccine never given to this adult pet")
+                # For adult pets that have never been vaccinated,
+                # they should get the core vaccines regardless of age
+                print(f"DEBUG - Adult dog with no vaccine history - recommending: {vaccine.vaccine_name}")
                 return vaccine
         
+        print("DEBUG - No annual vaccines matched, checking all available vaccines")
         for vaccine in available_vaccines:
+            print(f"DEBUG - Checking vaccine: {vaccine.vaccine_name}")
             if vaccine.id not in given_vaccine_ids:
-                vaccine_age_weeks = parse_age_to_weeks(vaccine.recommended_age)
-                
-                # Skip puppy vaccines for adults
-                if vaccine_age_weeks < 24:
-                    continue
-                    
-                if vaccine_age_weeks <= age_weeks:
-                    return vaccine
-                
-                # 3. No vaccines needed for adult
-                return None
+                # For adult pets with no vaccine history, recommend the first available vaccine
+                print(f"DEBUG - Adult pet with no history - recommending: {vaccine.vaccine_name}")
+                return vaccine
+
+        print("DEBUG - All vaccines already given or skipped, returning None")
+        return None
         
     else:
         # PUPPY/KITTEN LOGIC: Follow age-based schedule
@@ -2269,12 +2348,38 @@ class NextVaccineRecommendationView(APIView):
             return Response({"error": "Pet not found"}, 
                           status=status.HTTP_404_NOT_FOUND)
         
+        print(f"DEBUG - Getting next vaccine for pet ID: {pet_id}, Name: {pet.name}, Age: {pet.get_age()}")
         next_vaccine = get_next_vaccine_for_pet(pet)
+        print(f"DEBUG - Next vaccine result: {next_vaccine}")
         
         if next_vaccine:
+            print(f"DEBUG - Found vaccine: {next_vaccine.vaccine_name} (ID: {next_vaccine.id})")
             # Check if this is an annual revaccination
             is_annual = False
             today = date.today()
+            
+            # Check if pet has had this vaccine before (PAST appointments)
+            past_vaccine_exists = Appointment.objects.filter(
+                pet=pet,
+                vaccine=next_vaccine,
+                date__lte=today,
+                status__in=['booked', 'payment_completed', 'completed']
+            ).exists()
+            print(f"DEBUG - Past vaccine exists: {past_vaccine_exists}")
+            
+            # If pet has had it before AND vaccine requires annual revaccination
+            if past_vaccine_exists and next_vaccine.annual_revaccination:
+                is_annual = True
+                print(f"DEBUG - This is an annual revaccination")
+            
+            # Determine note
+            if is_annual:
+                note = "Annual revaccination due"
+            elif "week" in next_vaccine.recommended_age.lower() and "year" in pet.get_age().lower():
+                note = "Catch-up vaccine (missed earlier schedule)"
+            else:
+                note = "Next scheduled vaccine"
+            print(f"DEBUG - Note: {note}")
             
             # Check if pet has had this vaccine before (PAST appointments)
             past_vaccine_exists = Appointment.objects.filter(
