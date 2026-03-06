@@ -95,7 +95,7 @@ class DeliveryBoyLoginAPI(APIView):
                     "username": boy.username,
                     "email": boy.email,
                     "phone": boy.phone,
-                    "city": boy.city,
+                    "place": boy.place,
                     "profile_image": boy.profile_image.url if boy.profile_image else None,
                     "id_card_image": boy.id_card_image.url if boy.id_card_image else None,
                     "status": boy.status

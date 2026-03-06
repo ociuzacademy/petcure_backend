@@ -39,17 +39,33 @@ def admin_index(request):
     return render(request,'admin_index.html')
 
 
+@csrf_exempt
 def login(request):
     if request.method == 'POST':
-        email = request.POST.get('email')
-        password = request.POST.get('password')
-
-        try:
-            admin = Admin.objects.get(email=email,password=password)
-            request.session['admin_id'] = admin.id
-            return redirect('admin_index')
-        except Admin.DoesNotExist:
-            return redirect('login')
+        # Handle both JSON and form data
+        if request.content_type == 'application/json':
+            data = json.loads(request.body)
+            email = data.get('email')
+            password = data.get('password')
+            
+            try:
+                admin = Admin.objects.get(email=email, password=password)
+                request.session['admin_id'] = admin.id
+                return JsonResponse({"success": True, "message": "Login successful", "redirect": "/adminapp/admin_index/"})
+            except Admin.DoesNotExist:
+                return JsonResponse({"success": False, "message": "Invalid credentials"}, status=401)
+        else:
+            # Regular form submission from browser
+            email = request.POST.get('email')
+            password = request.POST.get('password')
+            
+            try:
+                admin = Admin.objects.get(email=email, password=password)
+                request.session['admin_id'] = admin.id
+                return redirect('admin_index')  # This redirects properly for browser
+            except Admin.DoesNotExist:
+                messages.error(request, "Invalid email or password")
+                return redirect('login')
 
     return render(request, 'login.html')
 
